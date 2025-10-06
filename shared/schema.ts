@@ -19,6 +19,7 @@ export const formStatusEnum = pgEnum('form_status', ['draft', 'published']);
 export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']);
 export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
 export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 'select', 'checkbox', 'date', 'textarea']);
+export const builderModeEnum = pgEnum('builder_mode', ['visual', 'code']);
 export const deploymentModeEnum = pgEnum('deployment_mode', ['saas', 'self-hosted']);
 export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 'expired']);
 
@@ -54,6 +55,10 @@ export const forms = pgTable("forms", {
   creatorId: varchar("creator_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   status: formStatusEnum("status").notNull().default('draft'),
   shareType: shareTypeEnum("share_type").notNull().default('users'),
+  builderMode: builderModeEnum("builder_mode").notNull().default('visual'),
+  customHtml: text("custom_html"),
+  customCss: text("custom_css"),
+  customJs: text("custom_js"),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

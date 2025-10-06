@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
 import { Card } from "@/components/ui/card";
-import { Save, Eye, Globe, Loader2 } from "lucide-react";
+import { Save, Eye, Globe, Loader2, Code2, Palette } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Tabs,
@@ -11,6 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getForm, updateForm, updateFormFields, publishForm } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
@@ -18,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, useParams } from "wouter";
 import type { FormField } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
 
@@ -42,6 +44,11 @@ export default function FormBuilderPage() {
   const [fields, setFields] = useState<LocalField[]>([]);
   const [nextFieldId, setNextFieldId] = useState(1);
   
+  const [builderMode, setBuilderMode] = useState<'visual' | 'code'>('visual');
+  const [customHtml, setCustomHtml] = useState("");
+  const [customCss, setCustomCss] = useState("");
+  const [customJs, setCustomJs] = useState("");
+  
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -55,6 +62,10 @@ export default function FormBuilderPage() {
     if (formData) {
       setFormTitle(formData.title);
       setFormDescription(formData.description || "");
+      setBuilderMode(formData.builderMode || 'visual');
+      setCustomHtml(formData.customHtml || "");
+      setCustomCss(formData.customCss || "");
+      setCustomJs(formData.customJs || "");
       setFields(
         formData.fields
           .sort((a, b) => a.order - b.order)
@@ -76,8 +87,22 @@ export default function FormBuilderPage() {
   }, [formData]);
 
   const updateFormMutation = useMutation({
-    mutationFn: (data: { title?: string; description?: string }) =>
+    mutationFn: (data: { 
+      title?: string; 
+      description?: string; 
+      builderMode?: 'visual' | 'code';
+      customHtml?: string;
+      customCss?: string;
+      customJs?: string;
+    }) =>
       updateForm(formId!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/forms", formId] });
+      toast({
+        title: "Guardado",
+        description: "Los cambios han sido guardados exitosamente",
+      });
+    },
     onError: (error: Error) => {
       toast({
         title: "Error al guardar",
@@ -202,17 +227,29 @@ export default function FormBuilderPage() {
       return;
     }
 
-    const fieldsData = fields.map((field, index) => ({
-      formId: formId,
-      type: field.type,
-      label: field.label,
-      placeholder: field.placeholder || null,
-      required: field.required,
-      options: field.options || null,
-      order: index,
-    }));
+    if (builderMode === 'code') {
+      // Guardar código personalizado
+      updateFormMutation.mutate({
+        builderMode: 'code',
+        customHtml,
+        customCss,
+        customJs,
+      });
+    } else {
+      // Guardar campos visuales
+      const fieldsData = fields.map((field, index) => ({
+        formId: formId,
+        type: field.type,
+        label: field.label,
+        placeholder: field.placeholder || null,
+        required: field.required,
+        options: field.options || null,
+        order: index,
+      }));
 
-    updateFieldsMutation.mutate(fieldsData);
+      updateFormMutation.mutate({ builderMode: 'visual' });
+      updateFieldsMutation.mutate(fieldsData);
+    }
   };
 
   const handlePreview = () => {
@@ -265,13 +302,36 @@ export default function FormBuilderPage() {
   return (
     <div className="h-screen flex flex-col">
       <header className="border-b border-border bg-background px-8 py-4 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-4">
           <Input
             value={formTitle}
             onChange={(e) => handleTitleChange(e.target.value)}
             className="text-lg font-semibold border-0 px-0 focus-visible:ring-0"
             data-testid="input-form-title"
           />
+          <div className="flex items-center gap-2 border border-border rounded-md p-1">
+            <Button
+              variant={builderMode === 'visual' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setBuilderMode('visual')}
+              data-testid="button-mode-visual"
+            >
+              <Palette className="h-4 w-4 mr-2" />
+              Visual
+            </Button>
+            <Button
+              variant={builderMode === 'code' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setBuilderMode('code')}
+              data-testid="button-mode-code"
+            >
+              <Code2 className="h-4 w-4 mr-2" />
+              Código
+            </Button>
+          </div>
+          {builderMode === 'code' && (
+            <Badge variant="outline">Modo Código Personalizado</Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -312,26 +372,28 @@ export default function FormBuilderPage() {
       </header>
 
       <div className="flex-1 overflow-hidden flex">
-        <aside className="w-64 border-r border-border bg-muted/30 p-4 overflow-y-auto">
-          <h3 className="font-semibold mb-3">Campos Disponibles</h3>
-          <div className="space-y-2">
-            {fieldTypes.map((field) => (
-              <Card
-                key={field.type}
-                className="p-3 cursor-pointer hover-elevate"
-                onClick={() => addField(field.type)}
-                data-testid={`button-add-${field.type}`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{field.icon}</span>
-                  <span className="text-sm font-medium">{field.label}</span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </aside>
+        {builderMode === 'visual' ? (
+          <>
+            <aside className="w-64 border-r border-border bg-muted/30 p-4 overflow-y-auto">
+              <h3 className="font-semibold mb-3">Campos Disponibles</h3>
+              <div className="space-y-2">
+                {fieldTypes.map((field) => (
+                  <Card
+                    key={field.type}
+                    className="p-3 cursor-pointer hover-elevate"
+                    onClick={() => addField(field.type)}
+                    data-testid={`button-add-${field.type}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{field.icon}</span>
+                      <span className="text-sm font-medium">{field.label}</span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </aside>
 
-        <main className="flex-1 overflow-y-auto">
+            <main className="flex-1 overflow-y-auto">
           <div className="max-w-3xl mx-auto p-8">
             <Card className="p-6 mb-6">
               <div className="space-y-4">
@@ -409,6 +471,89 @@ export default function FormBuilderPage() {
             </TabsContent>
           </Tabs>
         </aside>
+          </>
+        ) : (
+          <main className="flex-1 overflow-y-auto p-8">
+            <div className="max-w-5xl mx-auto space-y-6">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Descripción del formulario</Label>
+                    <Input
+                      value={formDescription}
+                      onChange={(e) => handleDescriptionChange(e.target.value)}
+                      placeholder="Descripción opcional del formulario"
+                      className="mt-2"
+                      data-testid="input-form-description-code"
+                    />
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <Tabs defaultValue="html" className="w-full">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="html" className="flex-1" data-testid="tab-html">
+                      HTML
+                    </TabsTrigger>
+                    <TabsTrigger value="css" className="flex-1" data-testid="tab-css">
+                      CSS
+                    </TabsTrigger>
+                    <TabsTrigger value="js" className="flex-1" data-testid="tab-js">
+                      JavaScript
+                    </TabsTrigger>
+                    <TabsTrigger value="preview" className="flex-1" data-testid="tab-preview">
+                      Preview
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="html" className="mt-4">
+                    <Label className="mb-2 block">HTML del Formulario</Label>
+                    <Textarea
+                      value={customHtml}
+                      onChange={(e) => setCustomHtml(e.target.value)}
+                      placeholder="<form>&#10;  <input type='text' name='campo1' />&#10;  <button>Enviar</button>&#10;</form>"
+                      className="font-mono text-sm min-h-[400px]"
+                      data-testid="textarea-custom-html"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="css" className="mt-4">
+                    <Label className="mb-2 block">CSS del Formulario</Label>
+                    <Textarea
+                      value={customCss}
+                      onChange={(e) => setCustomCss(e.target.value)}
+                      placeholder="form {&#10;  max-width: 600px;&#10;  margin: 0 auto;&#10;}"
+                      className="font-mono text-sm min-h-[400px]"
+                      data-testid="textarea-custom-css"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="js" className="mt-4">
+                    <Label className="mb-2 block">JavaScript del Formulario</Label>
+                    <Textarea
+                      value={customJs}
+                      onChange={(e) => setCustomJs(e.target.value)}
+                      placeholder="// Código JavaScript para validación o funcionalidad adicional"
+                      className="font-mono text-sm min-h-[400px]"
+                      data-testid="textarea-custom-js"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="preview" className="mt-4">
+                    <Label className="mb-2 block">Vista Previa</Label>
+                    <Card className="p-6 bg-muted/30">
+                      <div
+                        dangerouslySetInnerHTML={{ __html: customHtml }}
+                      />
+                      <style>{customCss}</style>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </Card>
+            </div>
+          </main>
+        )}
       </div>
     </div>
   );
