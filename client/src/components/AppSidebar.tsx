@@ -118,7 +118,7 @@ export function AppSidebar({ userRole = "cliente_saas" }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(user?.roleId === "admin_auto_host" || user?.roleId === "super_admin") && (
+        {(user?.roleId === "admin_auto_host" || user?.roleId === "super_admin" || user?.isSuperAdmin) && (
           <SidebarGroup>
             <SidebarGroupLabel>Administración</SidebarGroupLabel>
             <SidebarGroupContent>

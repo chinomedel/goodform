@@ -26,7 +26,7 @@ function isAuthenticated(req: any, res: any, next: any) {
 function requireRole(...roles: string[]) {
   return async (req: any, res: any, next: any) => {
     const user = await storage.getUser(req.user.id);
-    if (!user || !roles.includes(user.roleId)) {
+    if (!user || (!user.isSuperAdmin && !roles.includes(user.roleId))) {
       return res.status(403).json({ message: "No tienes permisos para realizar esta acción" });
     }
     next();
@@ -45,6 +45,10 @@ async function requireSuperAdmin(req: any, res: any, next: any) {
 // Helper to check if user is admin (deployment-specific)
 function isAdmin(role: string): boolean {
   return role === 'admin_auto_host' || role === 'super_admin';
+}
+
+function isUserAdmin(user: any): boolean {
+  return user.isSuperAdmin || isAdmin(user.roleId);
 }
 
 // Helper to check if user can create/edit forms (deployment-specific)
@@ -86,7 +90,7 @@ async function canAccessForm(formId: string, userId: string): Promise<boolean> {
   if (!user) return false;
 
   // Admin can access everything
-  if (isAdmin(user.roleId)) return true;
+  if (isUserAdmin(user)) return true;
 
   // Creator can access their own forms
   if (form.creatorId === userId) return true;
@@ -105,7 +109,7 @@ async function canEditForm(formId: string, userId: string): Promise<boolean> {
   if (!user) return false;
 
   // Admin can edit everything
-  if (isAdmin(user.roleId)) return true;
+  if (isUserAdmin(user)) return true;
 
   // Creator can edit their own forms
   if (form.creatorId === userId) return true;
@@ -224,7 +228,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       let forms;
-      if (isAdmin(user.roleId)) {
+      if (isUserAdmin(user)) {
         forms = await storage.getAllForms();
       } else {
         // Get user's own forms
@@ -314,7 +318,7 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.getUser(userId);
       
       // Only creator or admin can delete
-      if (form.creatorId !== userId && (!user || !isAdmin(user.roleId))) {
+      if (form.creatorId !== userId && (!user || !isUserAdmin(user))) {
         return res.status(403).json({ message: "Not authorized to delete this form" });
       }
 
@@ -417,7 +421,7 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.getUser(userId);
       
       // Only creator or admin can manage permissions
-      if (form.creatorId !== userId && (!user || !isAdmin(user.roleId))) {
+      if (form.creatorId !== userId && (!user || !isUserAdmin(user))) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
