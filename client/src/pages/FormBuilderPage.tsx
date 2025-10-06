@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
 import { Card } from "@/components/ui/card";
-import { Save, Eye, Globe, Loader2, Code2, Palette } from "lucide-react";
+import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Tabs,
@@ -20,6 +20,14 @@ import { useLocation, useParams } from "wouter";
 import type { FormField } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
 
@@ -491,6 +499,170 @@ export default function FormBuilderPage() {
               </Card>
 
               <Card className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Editor de Código Personalizado</h3>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="button-show-instructions">
+                        <HelpCircle className="h-4 w-4 mr-2" />
+                        Ver Instrucciones
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Instrucciones para Formularios Personalizados</DialogTitle>
+                        <DialogDescription>
+                          Aprende cómo mapear los campos de tu formulario HTML para que funcionen correctamente
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 text-sm">
+                        <div>
+                          <h4 className="font-semibold mb-2">1. Estructura Básica del Formulario</h4>
+                          <p className="text-muted-foreground mb-2">
+                            Tu formulario HTML debe incluir un elemento <code className="bg-muted px-1 py-0.5 rounded">{'<form>'}</code> con campos de entrada.
+                          </p>
+                          <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                            <pre>{`<form id="customForm">
+  <input type="text" name="nombre" required />
+  <input type="email" name="email" required />
+  <button type="submit">Enviar</button>
+</form>`}</pre>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold mb-2">2. Atributo "name" en los Campos</h4>
+                          <p className="text-muted-foreground mb-2">
+                            Cada campo debe tener un atributo <code className="bg-muted px-1 py-0.5 rounded">name</code> único. 
+                            Este será el identificador del campo cuando se envíe el formulario.
+                          </p>
+                          <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                            <pre>{`<input type="text" name="campo1" placeholder="Nombre completo" />
+<input type="email" name="campo2" placeholder="Email" />
+<textarea name="campo3" placeholder="Mensaje"></textarea>
+<select name="campo4">
+  <option value="opcion1">Opción 1</option>
+  <option value="opcion2">Opción 2</option>
+</select>`}</pre>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold mb-2">3. Tipos de Campos Soportados</h4>
+                          <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="text">'}</code> - Texto simple</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="email">'}</code> - Email</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="number">'}</code> - Número</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="date">'}</code> - Fecha</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="tel">'}</code> - Teléfono</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<textarea>'}</code> - Texto largo</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<select>'}</code> - Selección</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="checkbox">'}</code> - Casillas de verificación</li>
+                            <li><code className="bg-muted px-1 py-0.5 rounded">{'<input type="radio">'}</code> - Opciones de radio</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold mb-2">4. Ejemplo Completo con CSS</h4>
+                          <p className="text-muted-foreground mb-2">
+                            Combina HTML y CSS para crear formularios con diseño personalizado:
+                          </p>
+                          <div className="space-y-2">
+                            <p className="text-xs font-semibold">HTML:</p>
+                            <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                              <pre>{`<form id="contactForm" class="custom-form">
+  <div class="form-group">
+    <label for="nombre">Nombre Completo</label>
+    <input type="text" id="nombre" name="nombre" required />
+  </div>
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required />
+  </div>
+  <div class="form-group">
+    <label for="mensaje">Mensaje</label>
+    <textarea id="mensaje" name="mensaje" rows="4"></textarea>
+  </div>
+  <button type="submit" class="submit-btn">Enviar</button>
+</form>`}</pre>
+                            </div>
+                            <p className="text-xs font-semibold mt-3">CSS:</p>
+                            <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                              <pre>{`.custom-form {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.submit-btn {
+  background-color: #0070f3;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.submit-btn:hover {
+  background-color: #0051cc;
+}`}</pre>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold mb-2">5. Validación con JavaScript (Opcional)</h4>
+                          <p className="text-muted-foreground mb-2">
+                            Puedes agregar validación personalizada en la pestaña JavaScript:
+                          </p>
+                          <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                            <pre>{`// Validación personalizada
+document.getElementById('customForm')?.addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const email = document.querySelector('[name="email"]').value;
+  if (!email.includes('@')) {
+    alert('Por favor ingresa un email válido');
+    return;
+  }
+  
+  // Continuar con el envío
+  this.submit();
+});`}</pre>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-4 rounded-md">
+                          <p className="text-sm">
+                            <strong>💡 Nota Importante:</strong> Los formularios personalizados se mostrarán exactamente como los diseñes. 
+                            Asegúrate de probar tu formulario usando la pestaña "Preview" antes de publicarlo.
+                          </p>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Tabs defaultValue="html" className="w-full">
                   <TabsList className="w-full">
                     <TabsTrigger value="html" className="flex-1" data-testid="tab-html">
