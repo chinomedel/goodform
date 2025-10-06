@@ -186,23 +186,49 @@ export default function SettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Color Primario</FormLabel>
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-start">
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          placeholder="#6366f1" 
-                          data-testid="input-primary-color"
-                          className="flex-1"
-                        />
+                        <div className="flex-1 space-y-3">
+                          <div className="flex gap-3">
+                            <input
+                              type="color"
+                              {...field}
+                              className="h-10 w-20 cursor-pointer rounded-md border border-border"
+                              data-testid="input-color-picker"
+                            />
+                            <Input 
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="#6366f1" 
+                              data-testid="input-primary-color"
+                              className="flex-1"
+                            />
+                          </div>
+                          <div className="grid grid-cols-6 gap-2">
+                            {['#6366f1', '#3b82f6', '#8b5cf6', '#ec4899', '#f43f5e', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981'].map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => field.onChange(color)}
+                                className="h-8 w-full rounded-md border-2 hover-elevate active-elevate-2"
+                                style={{ 
+                                  backgroundColor: color,
+                                  borderColor: field.value === color ? '#000' : 'transparent'
+                                }}
+                                data-testid={`color-preset-${color}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
                       </FormControl>
                       <div 
-                        className="w-16 h-10 rounded-md border border-border"
+                        className="w-16 h-16 rounded-md border border-border flex-shrink-0"
                         style={{ backgroundColor: field.value }}
                         data-testid="color-preview"
                       />
                     </div>
                     <FormDescription>
-                      Color principal de la aplicación en formato hexadecimal (ej: #6366f1)
+                      Selecciona un color de la paleta, usa el selector de color, o ingresa un código hexadecimal
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
