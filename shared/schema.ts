@@ -19,6 +19,8 @@ export const formStatusEnum = pgEnum('form_status', ['draft', 'published']);
 export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']);
 export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
 export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 'select', 'checkbox', 'date', 'textarea']);
+export const deploymentModeEnum = pgEnum('deployment_mode', ['saas', 'self-hosted']);
+export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 'expired']);
 
 // Session storage table - used by passport-local for session management
 export const sessions = pgTable(
@@ -40,6 +42,7 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: userRoleEnum("role").notNull().default('gestor'),
+  isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -92,6 +95,29 @@ export const appConfig = pgTable("app_config", {
   faviconUrl: text("favicon_url"),
   primaryColor: varchar("primary_color").notNull().default('#6366f1'),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Deployment table - stores deployment configuration for auto-host
+export const deployments = pgTable("deployments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  mode: deploymentModeEnum("mode").notNull().default('saas'),
+  setupCompleted: boolean("setup_completed").notNull().default(false),
+  licenseKey: varchar("license_key"),
+  lastValidated: timestamp("last_validated"),
+  validUntil: timestamp("valid_until"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Licenses table - stores license codes (SaaS only)
+export const licenses = pgTable("licenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  licenseKey: varchar("license_key").notNull().unique(),
+  issuedToEmail: varchar("issued_to_email").notNull(),
+  issuedBy: varchar("issued_by").notNull(),
+  issuedAt: timestamp("issued_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: licenseStatusEnum("status").notNull().default('active'),
+  deploymentInfo: jsonb("deployment_info"),
 });
 
 // Relations
@@ -188,3 +214,17 @@ export const insertAppConfigSchema = createInsertSchema(appConfig).omit({
 });
 export type InsertAppConfig = z.infer<typeof insertAppConfigSchema>;
 export type AppConfig = typeof appConfig.$inferSelect;
+
+export const insertDeploymentSchema = createInsertSchema(deployments).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
+export type Deployment = typeof deployments.$inferSelect;
+
+export const insertLicenseSchema = createInsertSchema(licenses).omit({
+  id: true,
+  issuedAt: true,
+});
+export type InsertLicense = z.infer<typeof insertLicenseSchema>;
+export type License = typeof licenses.$inferSelect;
