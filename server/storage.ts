@@ -45,6 +45,7 @@ export interface IStorage {
   createFormPermission(permission: InsertFormPermission): Promise<FormPermission>;
   getFormPermissions(formId: string): Promise<FormPermission[]>;
   getUserFormPermission(formId: string, userId: string): Promise<FormPermission | undefined>;
+  getUserPermissions(userId: string): Promise<FormPermission[]>;
   deleteFormPermission(id: string): Promise<void>;
   
   // Response operations
@@ -208,6 +209,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFormPermission(id: string): Promise<void> {
     await db.delete(formPermissions).where(eq(formPermissions.id, id));
+  }
+
+  async getUserPermissions(userId: string): Promise<FormPermission[]> {
+    return await db
+      .select()
+      .from(formPermissions)
+      .where(eq(formPermissions.userId, userId));
   }
 
   // Response operations

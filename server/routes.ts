@@ -11,6 +11,44 @@ import {
 } from "@shared/schema";
 import ExcelJS from 'exceljs';
 
+// Helper to check if user can access form
+async function canAccessForm(formId: string, userId: string): Promise<boolean> {
+  const form = await storage.getForm(formId);
+  if (!form) return false;
+
+  const user = await storage.getUser(userId);
+  if (!user) return false;
+
+  // Admin can access everything
+  if (user.role === 'admin') return true;
+
+  // Creator can access their own forms
+  if (form.creatorId === userId) return true;
+
+  // Check if user has explicit permission
+  const permission = await storage.getUserFormPermission(formId, userId);
+  return !!permission;
+}
+
+// Helper to check if user can edit form
+async function canEditForm(formId: string, userId: string): Promise<boolean> {
+  const form = await storage.getForm(formId);
+  if (!form) return false;
+
+  const user = await storage.getUser(userId);
+  if (!user) return false;
+
+  // Admin can edit everything
+  if (user.role === 'admin') return true;
+
+  // Creator can edit their own forms
+  if (form.creatorId === userId) return true;
+
+  // Check if user has editor permission
+  const permission = await storage.getUserFormPermission(formId, userId);
+  return permission?.permission === 'editor';
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -75,13 +113,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user.role === 'admin') {
         forms = await storage.getAllForms();
       } else {
-        forms = await storage.getFormsByUser(userId);
+        // Get user's own forms
+        const ownForms = await storage.getFormsByUser(userId);
+        
+        // Get forms shared with user
+        const sharedPermissions = await storage.getUserPermissions(userId);
+        const sharedFormIds = sharedPermissions.map(p => p.formId);
+        const sharedForms = await Promise.all(
+          sharedFormIds.map(id => storage.getForm(id))
+        );
+        
+        // Combine and deduplicate
+        const allForms = [...ownForms, ...sharedForms.filter(f => f)];
+        const uniqueForms = Array.from(
+          new Map(allForms.map(f => [f!.id, f])).values()
+        );
+        forms = uniqueForms;
       }
 
       // Fetch response counts for each form
       const formsWithCounts = await Promise.all(
         forms.map(async (form) => {
-          const responseCount = await storage.getFormResponseCount(form.id);
+          const responseCount = await storage.getFormResponseCount(form!.id);
           return { ...form, responseCount };
         })
       );
@@ -96,6 +149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
+      const userId = req.user.claims.sub;
+
+      // Check permission
+      if (!await canAccessForm(id, userId)) {
+        return res.status(403).json({ message: "Not authorized to access this form" });
+      }
+
       const form = await storage.getFormWithFields(id);
 
       if (!form) {
@@ -114,12 +174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const userId = req.user.claims.sub;
 
-      const form = await storage.getForm(id);
-      if (!form) {
-        return res.status(404).json({ message: "Form not found" });
-      }
-
-      if (form.creatorId !== userId) {
+      // Check if user can edit
+      if (!await canEditForm(id, userId)) {
         return res.status(403).json({ message: "Not authorized to edit this form" });
       }
 
@@ -141,7 +197,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Form not found" });
       }
 
-      if (form.creatorId !== userId) {
+      const user = await storage.getUser(userId);
+      
+      // Only creator or admin can delete
+      if (form.creatorId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "Not authorized to delete this form" });
       }
 
@@ -158,12 +217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const userId = req.user.claims.sub;
 
-      const form = await storage.getForm(id);
-      if (!form) {
-        return res.status(404).json({ message: "Form not found" });
-      }
-
-      if (form.creatorId !== userId) {
+      // Check if user can edit
+      if (!await canEditForm(id, userId)) {
         return res.status(403).json({ message: "Not authorized to publish this form" });
       }
 
@@ -181,12 +236,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { formId } = req.params;
       const userId = req.user.claims.sub;
 
-      const form = await storage.getForm(formId);
-      if (!form) {
-        return res.status(404).json({ message: "Form not found" });
-      }
-
-      if (form.creatorId !== userId) {
+      // Check if user can edit
+      if (!await canEditForm(formId, userId)) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -209,24 +260,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { fields } = req.body;
 
-      const form = await storage.getForm(formId);
-      if (!form) {
-        return res.status(404).json({ message: "Form not found" });
-      }
-
-      if (form.creatorId !== userId) {
+      // Check if user can edit
+      if (!await canEditForm(formId, userId)) {
         return res.status(403).json({ message: "Not authorized" });
       }
+
+      // Validate all fields
+      const validatedFields = fields.map((field: any) => 
+        insertFormFieldSchema.parse({
+          ...field,
+          formId,
+        })
+      );
 
       // Delete existing fields and create new ones
       await storage.deleteFormFields(formId);
 
       const createdFields = [];
-      for (const fieldData of fields) {
-        const field = await storage.createFormField({
-          ...fieldData,
-          formId,
-        });
+      for (const fieldData of validatedFields) {
+        const field = await storage.createFormField(fieldData);
         createdFields.push(field);
       }
 
@@ -248,7 +300,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Form not found" });
       }
 
-      if (form.creatorId !== userId) {
+      const user = await storage.getUser(userId);
+      
+      // Only creator or admin can manage permissions
+      if (form.creatorId !== userId && user?.role !== 'admin') {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -268,6 +323,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:formId/permissions', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
+      const userId = req.user.claims.sub;
+
+      // Check if user can access form
+      if (!await canAccessForm(formId, userId)) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
       const permissions = await storage.getFormPermissions(formId);
       res.json(permissions);
     } catch (error) {
@@ -287,6 +349,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (form.status !== 'published') {
+        return res.status(404).json({ message: "Form not available" });
+      }
+
+      // Check if form is public
+      if (form.shareType !== 'public') {
         return res.status(404).json({ message: "Form not available" });
       }
 
@@ -318,6 +385,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Form not available" });
       }
 
+      // Check if form is public
+      if (form.shareType !== 'public') {
+        return res.status(404).json({ message: "Form not available" });
+      }
+
       const responseData = insertFormResponseSchema.parse({
         formId: id,
         respondentEmail: email,
@@ -336,6 +408,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:formId/responses', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
+      const userId = req.user.claims.sub;
+
+      // Check if user can access form
+      if (!await canAccessForm(formId, userId)) {
+        return res.status(403).json({ message: "Not authorized to access responses" });
+      }
+
       const responses = await storage.getFormResponses(formId);
       res.json(responses);
     } catch (error) {
@@ -348,7 +427,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:formId/export', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
+      const userId = req.user.claims.sub;
       
+      // Check if user can access form
+      if (!await canAccessForm(formId, userId)) {
+        return res.status(403).json({ message: "Not authorized to export responses" });
+      }
+
       const form = await storage.getFormWithFields(formId);
       if (!form) {
         return res.status(404).json({ message: "Form not found" });
