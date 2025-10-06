@@ -42,6 +42,20 @@ async function requireSuperAdmin(req: any, res: any, next: any) {
   next();
 }
 
+// Helper to check if user is admin (deployment-specific)
+function isAdmin(role: string): boolean {
+  return role === 'admin_auto_host' || role === 'super_admin';
+}
+
+// Helper to check if user can create/edit forms (deployment-specific)
+function canManageForms(role: string): boolean {
+  if (isSelfHostedMode()) {
+    return role === 'admin_auto_host';
+  } else {
+    return role === 'super_admin' || role === 'cliente_saas';
+  }
+}
+
 // Middleware to check form limit in self-hosted mode
 async function checkFormLimit(req: any, res: any, next: any) {
   if (isSelfHostedMode()) {
@@ -72,7 +86,7 @@ async function canAccessForm(formId: string, userId: string): Promise<boolean> {
   if (!user) return false;
 
   // Admin can access everything
-  if (user.role === 'admin') return true;
+  if (isAdmin(user.role)) return true;
 
   // Creator can access their own forms
   if (form.creatorId === userId) return true;
@@ -91,7 +105,7 @@ async function canEditForm(formId: string, userId: string): Promise<boolean> {
   if (!user) return false;
 
   // Admin can edit everything
-  if (user.role === 'admin') return true;
+  if (isAdmin(user.role)) return true;
 
   // Creator can edit their own forms
   if (form.creatorId === userId) return true;
@@ -106,7 +120,7 @@ export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
   // User management (Admin only)
-  app.get('/api/users', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+  app.get('/api/users', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -116,7 +130,43 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/users/:userId/role', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+  // Create user (Admin only, auto-host mode)
+  app.post('/api/users', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      if (!isSelfHostedMode()) {
+        return res.status(403).json({ message: "Creación de usuarios solo disponible en modo auto-host" });
+      }
+
+      const { email, password, firstName, lastName } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "El email ya está registrado" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role: 'visualizador_auto_host',
+        isSuperAdmin: false,
+      });
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Error al crear usuario" });
+    }
+  });
+
+  app.patch('/api/users/:userId/role', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const { userId } = req.params;
       const { role } = req.body;
@@ -138,7 +188,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Form routes
-  app.post('/api/forms', isAuthenticated, requireRole('admin', 'gestor'), checkFormLimit, async (req: any, res) => {
+  app.post('/api/forms', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), checkFormLimit, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const formData = insertFormSchema.parse({
@@ -164,7 +214,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       let forms;
-      if (user.role === 'admin') {
+      if (isAdmin(user.role)) {
         forms = await storage.getAllForms();
       } else {
         // Get user's own forms
@@ -223,7 +273,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/forms/:id', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.patch('/api/forms/:id', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.id;
@@ -241,7 +291,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.delete('/api/forms/:id', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.delete('/api/forms/:id', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.id;
@@ -266,7 +316,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/forms/:id/publish', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.post('/api/forms/:id/publish', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), async (req: any, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.id;
@@ -285,7 +335,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Form field routes
-  app.post('/api/forms/:formId/fields', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.post('/api/forms/:formId/fields', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), async (req: any, res) => {
     try {
       const { formId } = req.params;
       const userId = req.user.id;
@@ -308,7 +358,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.post('/api/forms/:formId/fields/batch', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.post('/api/forms/:formId/fields/batch', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), async (req: any, res) => {
     try {
       const { formId } = req.params;
       const userId = req.user.id;
@@ -344,7 +394,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Form permission routes
-  app.post('/api/forms/:formId/permissions', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.post('/api/forms/:formId/permissions', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), async (req: any, res) => {
     try {
       const { formId } = req.params;
       const userId = req.user.id;
@@ -693,7 +743,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Activate license (self-hosted)
-  app.post('/api/license/activate', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+  app.post('/api/license/activate', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       if (isSaasMode()) {
         return res.status(403).json({ message: "No disponible en modo SaaS" });
@@ -783,7 +833,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // App configuration (Admin only)
-  app.get('/api/config', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+  app.get('/api/config', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const config = await storage.getAppConfig();
       res.json(config);
@@ -793,7 +843,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch('/api/config', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+  app.patch('/api/config', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const configData = insertAppConfigSchema.parse(req.body);
       const updatedConfig = await storage.updateAppConfig(configData);
