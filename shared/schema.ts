@@ -31,15 +31,15 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table - required for Replit Auth
-// IMPORTANT: id comes from Replit Auth (claims.sub), no default value
+// User storage table for local authentication
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey(),
-  email: varchar("email").unique(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  password: text("password").notNull(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: userRoleEnum("role").notNull().default('visualizador'),
+  role: userRoleEnum("role").notNull().default('gestor'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -132,8 +132,12 @@ export const formResponsesRelations = relations(formResponses, ({ one }) => ({
 }));
 
 // Zod schemas for validation
-export const upsertUserSchema = createInsertSchema(users);
-export type UpsertUser = z.infer<typeof upsertUserSchema>;
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 export const insertFormSchema = createInsertSchema(forms).omit({

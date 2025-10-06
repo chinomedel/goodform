@@ -1,8 +1,8 @@
-// Based on blueprint:javascript_log_in_with_replit
+// Based on blueprint:javascript_auth_all_persistance
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, requireRole } from "./replitAuth";
+import { setupAuth } from "./auth";
 import {
   insertFormSchema,
   insertFormFieldSchema,
@@ -10,6 +10,25 @@ import {
   insertFormResponseSchema,
 } from "@shared/schema";
 import ExcelJS from 'exceljs';
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "No autenticado" });
+  }
+  next();
+}
+
+// Middleware to check if user has required role
+function requireRole(...roles: string[]) {
+  return async (req: any, res: any, next: any) => {
+    const user = await storage.getUser(req.user.id);
+    if (!user || !roles.includes(user.role)) {
+      return res.status(403).json({ message: "No tienes permisos para realizar esta acción" });
+    }
+    next();
+  };
+}
 
 // Helper to check if user can access form
 async function canAccessForm(formId: string, userId: string): Promise<boolean> {
@@ -49,21 +68,9 @@ async function canEditForm(formId: string, userId: string): Promise<boolean> {
   return permission?.permission === 'editor';
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+export function registerRoutes(app: Express): Server {
+  // Auth middleware and routes (/api/register, /api/login, /api/logout, /api/user)
+  setupAuth(app);
 
   // User management (Admin only)
   app.patch('/api/users/:userId/role', isAuthenticated, requireRole('admin'), async (req: any, res) => {
@@ -86,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Form routes
   app.post('/api/forms', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const formData = insertFormSchema.parse({
         ...req.body,
         creatorId: userId,
@@ -102,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/forms', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const user = await storage.getUser(userId);
 
       if (!user) {
@@ -149,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Check permission
       if (!await canAccessForm(id, userId)) {
@@ -172,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/forms/:id', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Check if user can edit
       if (!await canEditForm(id, userId)) {
@@ -190,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/forms/:id', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       const form = await storage.getForm(id);
       if (!form) {
@@ -215,7 +222,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/forms/:id/publish', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Check if user can edit
       if (!await canEditForm(id, userId)) {
@@ -234,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/forms/:formId/fields', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
       const { formId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Check if user can edit
       if (!await canEditForm(formId, userId)) {
@@ -257,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/forms/:formId/fields/batch', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
       const { formId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { fields } = req.body;
 
       // Check if user can edit
@@ -293,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/forms/:formId/permissions', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
     try {
       const { formId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       const form = await storage.getForm(formId);
       if (!form) {
@@ -323,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:formId/permissions', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Check if user can access form
       if (!await canAccessForm(formId, userId)) {
@@ -408,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:formId/responses', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Check if user can access form
       if (!await canAccessForm(formId, userId)) {
@@ -427,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/forms/:formId/export', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // Check if user can access form
       if (!await canAccessForm(formId, userId)) {
@@ -495,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const stats = await storage.getFormStats(userId);
       res.json(stats);
     } catch (error) {
