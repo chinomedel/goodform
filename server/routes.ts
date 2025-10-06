@@ -456,6 +456,40 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Preview form (authenticated - for creators/admins)
+  app.get('/api/forms/:id/preview', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const form = await storage.getFormWithFields(id);
+
+      if (!form) {
+        return res.status(404).json({ message: "Form not found" });
+      }
+
+      // Check if user can access form (creator, admin, or has permissions)
+      if (!await canAccessForm(id, userId)) {
+        return res.status(403).json({ message: "Not authorized to preview this form" });
+      }
+
+      // Return form data for preview (including custom code if in code mode)
+      res.json({
+        id: form.id,
+        title: form.title,
+        description: form.description,
+        fields: form.fields,
+        builderMode: form.builderMode,
+        customHtml: form.customHtml,
+        customCss: form.customCss,
+        customJs: form.customJs,
+        status: form.status,
+      });
+    } catch (error) {
+      console.error("Error fetching form preview:", error);
+      res.status(500).json({ message: "Failed to fetch form preview" });
+    }
+  });
+
   // Public form submission (no auth required)
   app.get('/api/public/forms/:id', async (req, res) => {
     try {
