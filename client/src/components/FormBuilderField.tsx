@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { GripVertical, Trash2, Settings } from "lucide-react";
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
@@ -12,6 +13,7 @@ interface FormBuilderFieldProps {
   placeholder?: string;
   onDelete?: () => void;
   onSettings?: () => void;
+  onLabelChange?: (newLabel: string) => void;
 }
 
 const fieldIcons: Record<FieldType, string> = {
@@ -32,6 +34,7 @@ export function FormBuilderField({
   placeholder,
   onDelete,
   onSettings,
+  onLabelChange,
 }: FormBuilderFieldProps) {
   return (
     <Card className="p-4 mb-2" data-testid={`field-${id}`}>
@@ -45,10 +48,16 @@ export function FormBuilderField({
             <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
               {fieldIcons[type]}
             </span>
-            <h4 className="font-medium text-sm">
-              {label}
-              {required && <span className="text-destructive ml-1">*</span>}
-            </h4>
+            <div className="flex-1 flex items-center gap-2">
+              <Input
+                value={label}
+                onChange={(e) => onLabelChange?.(e.target.value)}
+                placeholder="Nombre del campo"
+                className="h-8 text-sm font-medium"
+                data-testid={`input-label-${id}`}
+              />
+              {required && <span className="text-destructive">*</span>}
+            </div>
           </div>
           {placeholder && (
             <p className="text-xs text-muted-foreground">{placeholder}</p>

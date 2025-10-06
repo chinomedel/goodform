@@ -225,6 +225,12 @@ export default function FormBuilderPage() {
     setFields(fields.filter((f) => f.id !== fieldId));
   };
 
+  const updateFieldLabel = (fieldId: string, newLabel: string) => {
+    setFields(fields.map((f) => 
+      f.id === fieldId ? { ...f, label: newLabel } : f
+    ));
+  };
+
   const handleSave = () => {
     if (!formId) {
       toast({
@@ -429,6 +435,7 @@ export default function FormBuilderPage() {
                   placeholder={field.placeholder}
                   onDelete={() => deleteField(field.id)}
                   onSettings={() => console.log("Settings", field.id)}
+                  onLabelChange={(newLabel) => updateFieldLabel(field.id, newLabel)}
                 />
               ))}
               
