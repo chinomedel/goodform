@@ -5,6 +5,8 @@ import {
   formPermissions,
   formResponses,
   appConfig,
+  deployments,
+  licenses,
   type User,
   type InsertUser,
   type Form,
@@ -17,6 +19,10 @@ import {
   type InsertFormResponse,
   type AppConfig,
   type InsertAppConfig,
+  type Deployment,
+  type InsertDeployment,
+  type License,
+  type InsertLicense,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -69,6 +75,21 @@ export interface IStorage {
   // App configuration
   getAppConfig(): Promise<AppConfig>;
   updateAppConfig(config: Partial<InsertAppConfig>): Promise<AppConfig>;
+  
+  // Deployment operations
+  getDeployment(): Promise<Deployment | undefined>;
+  createDeployment(deployment: InsertDeployment): Promise<Deployment>;
+  updateDeployment(id: string, data: Partial<InsertDeployment>): Promise<Deployment>;
+  
+  // License operations
+  createLicense(license: InsertLicense): Promise<License>;
+  getLicense(licenseKey: string): Promise<License | undefined>;
+  getLicenseById(id: string): Promise<License | undefined>;
+  getAllLicenses(): Promise<License[]>;
+  updateLicenseStatus(id: string, status: 'active' | 'revoked' | 'expired'): Promise<License>;
+  
+  // Form count for license validation
+  countForms(userId?: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -317,6 +338,71 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updated;
+  }
+
+  // Deployment operations
+  async getDeployment(): Promise<Deployment | undefined> {
+    const [deployment] = await db.select().from(deployments).limit(1);
+    return deployment;
+  }
+
+  async createDeployment(deploymentData: InsertDeployment): Promise<Deployment> {
+    const [deployment] = await db.insert(deployments).values(deploymentData).returning();
+    return deployment;
+  }
+
+  async updateDeployment(id: string, data: Partial<InsertDeployment>): Promise<Deployment> {
+    const [deployment] = await db
+      .update(deployments)
+      .set(data)
+      .where(eq(deployments.id, id))
+      .returning();
+    return deployment;
+  }
+
+  // License operations
+  async createLicense(licenseData: InsertLicense): Promise<License> {
+    const [license] = await db.insert(licenses).values(licenseData).returning();
+    return license;
+  }
+
+  async getLicense(licenseKey: string): Promise<License | undefined> {
+    const [license] = await db.select().from(licenses).where(eq(licenses.licenseKey, licenseKey));
+    return license;
+  }
+
+  async getLicenseById(id: string): Promise<License | undefined> {
+    const [license] = await db.select().from(licenses).where(eq(licenses.id, id));
+    return license;
+  }
+
+  async getAllLicenses(): Promise<License[]> {
+    return await db.select().from(licenses).orderBy(desc(licenses.issuedAt));
+  }
+
+  async updateLicenseStatus(id: string, status: 'active' | 'revoked' | 'expired'): Promise<License> {
+    const [license] = await db
+      .update(licenses)
+      .set({ status })
+      .where(eq(licenses.id, id))
+      .returning();
+    return license;
+  }
+
+  // Form count for license validation
+  async countForms(userId?: string): Promise<number> {
+    if (userId) {
+      const result = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forms)
+        .where(eq(forms.creatorId, userId));
+      return result[0]?.count || 0;
+    } else {
+      const result = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(forms);
+      return result[0]?.count || 0;
+    }
   }
 }
 

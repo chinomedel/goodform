@@ -11,6 +11,7 @@ import {
   insertAppConfigSchema,
 } from "@shared/schema";
 import ExcelJS from 'exceljs';
+import { isSelfHostedMode, hasValidLicense } from "./deployment";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
@@ -29,6 +30,36 @@ function requireRole(...roles: string[]) {
     }
     next();
   };
+}
+
+// Middleware to check if user is super admin
+async function requireSuperAdmin(req: any, res: any, next: any) {
+  const user = await storage.getUser(req.user.id);
+  if (!user || !user.isSuperAdmin) {
+    return res.status(403).json({ message: "Solo el super administrador puede realizar esta acción" });
+  }
+  next();
+}
+
+// Middleware to check form limit in self-hosted mode
+async function checkFormLimit(req: any, res: any, next: any) {
+  if (isSelfHostedMode()) {
+    const hasLicense = await hasValidLicense();
+    
+    if (!hasLicense) {
+      const formCount = await storage.countForms();
+      
+      if (formCount >= 5) {
+        return res.status(402).json({
+          error: 'Límite de formularios alcanzado',
+          message: 'Has alcanzado el límite de 5 formularios. Contacta al administrador para obtener una licencia.',
+          limit: 5,
+          current: formCount
+        });
+      }
+    }
+  }
+  next();
 }
 
 // Helper to check if user can access form
@@ -102,7 +133,7 @@ export function registerRoutes(app: Express): Server {
   });
 
   // Form routes
-  app.post('/api/forms', isAuthenticated, requireRole('admin', 'gestor'), async (req: any, res) => {
+  app.post('/api/forms', isAuthenticated, requireRole('admin', 'gestor'), checkFormLimit, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const formData = insertFormSchema.parse({
