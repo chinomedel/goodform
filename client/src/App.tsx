@@ -15,6 +15,7 @@ import DashboardPage from "@/pages/DashboardPage";
 import FormBuilderPage from "@/pages/FormBuilderPage";
 import FormResponsesPage from "@/pages/FormResponsesPage";
 import PublicFormPage from "@/pages/PublicFormPage";
+import PreviewFormPage from "@/pages/PreviewFormPage";
 import UsersPage from "@/pages/UsersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import LicensesPage from "@/pages/LicensesPage";
@@ -58,6 +59,7 @@ function AuthenticatedApp() {
               <Route path="/builder" component={FormBuilderPage} />
               <Route path="/builder/:id" component={FormBuilderPage} />
               <Route path="/responses/:id" component={FormResponsesPage} />
+              <Route path="/preview/:id" component={PreviewFormPage} />
               <Route path="/users" component={UsersPage} />
               <Route path="/settings" component={SettingsPage} />
               <Route path="/licenses" component={LicensesPage} />
@@ -84,6 +86,7 @@ function Router() {
       <ProtectedRoute path="/builder" component={AuthenticatedApp} />
       <ProtectedRoute path="/builder/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/responses/:id" component={AuthenticatedApp} />
+      <ProtectedRoute path="/preview/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/users" component={AuthenticatedApp} />
       <ProtectedRoute path="/settings" component={AuthenticatedApp} />
       <ProtectedRoute path="/licenses" component={AuthenticatedApp} />
