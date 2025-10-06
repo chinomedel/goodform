@@ -280,6 +280,36 @@ Esto inicia:
 4. Si válida: actualiza deployment con licencia
 5. Desbloquea funcionalidades
 
+## Distribución Auto-Host
+
+La aplicación se puede instalar de 3 formas:
+
+### 1. **NPM Global** (para desarrollo)
+```bash
+npm install -g goodform
+goodform setup
+```
+- Ver `NPM_DISTRIBUTION.md` para configuración completa
+- Requiere PostgreSQL instalado por separado
+
+### 2. **Docker** (standalone)
+```bash
+docker build -t goodform .
+docker run -p 5000:5000 goodform
+```
+- Usa `Dockerfile` multi-stage optimizado
+- Requiere PostgreSQL externo
+
+### 3. **Docker Compose** (recomendado - todo incluido)
+```bash
+docker-compose up -d
+```
+- Incluye PostgreSQL automáticamente
+- Configuración en `docker-compose.yml`
+- Variables en `.env.example`
+
+Ver `INSTALL.md` para guía completa de instalación.
+
 ## Próximos Pasos Posibles
 
 1. **Dashboard de Licencias**: UI completa para super admin
