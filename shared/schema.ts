@@ -34,6 +34,14 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Roles table - defines available user roles
+export const roles = pgTable("roles", {
+  id: varchar("id").primaryKey(),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // User storage table - email/password authentication with scrypt hashing
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -42,7 +50,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: userRoleEnum("role").notNull().default('cliente_saas'),
+  roleId: varchar("role_id").notNull().references(() => roles.id).default('cliente_saas'),
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -126,7 +134,15 @@ export const licenses = pgTable("licenses", {
 });
 
 // Relations
-export const usersRelations = relations(users, ({ many }) => ({
+export const rolesRelations = relations(roles, ({ many }) => ({
+  users: many(users),
+}));
+
+export const usersRelations = relations(users, ({ one, many }) => ({
+  role: one(roles, {
+    fields: [users.roleId],
+    references: [roles.id],
+  }),
   createdForms: many(forms),
   formPermissions: many(formPermissions),
   responses: many(formResponses),
@@ -172,6 +188,12 @@ export const formResponsesRelations = relations(formResponses, ({ one }) => ({
 }));
 
 // Zod schemas for validation
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  createdAt: true,
+});
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type Role = typeof roles.$inferSelect;
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
