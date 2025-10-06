@@ -1,18 +1,167 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
+import {
+  index,
+  jsonb,
+  pgTable,
+  timestamp,
+  varchar,
+  text,
+  boolean,
+  integer,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const userRoleEnum = pgEnum('user_role', ['admin', 'gestor', 'visualizador']);
+export const formStatusEnum = pgEnum('form_status', ['draft', 'published']);
+export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']);
+export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
+export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 'select', 'checkbox', 'date', 'textarea']);
+
+// Session storage table - required for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table - required for Replit Auth
+// IMPORTANT: id comes from Replit Auth (claims.sub), no default value
 export const users = pgTable("users", {
+  id: varchar("id").primaryKey(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  role: userRoleEnum("role").notNull().default('visualizador'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const forms = pgTable("forms", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  creatorId: varchar("creator_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  status: formStatusEnum("status").notNull().default('draft'),
+  shareType: shareTypeEnum("share_type").notNull().default('users'),
+  publishedAt: timestamp("published_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const formFields = pgTable("form_fields", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: 'cascade' }),
+  type: fieldTypeEnum("type").notNull(),
+  label: text("label").notNull(),
+  placeholder: text("placeholder"),
+  required: boolean("required").notNull().default(false),
+  options: text("options").array(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export const formPermissions = pgTable("form_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  permission: formPermissionEnum("permission").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const formResponses = pgTable("form_responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: 'cascade' }),
+  respondentId: varchar("respondent_id").references(() => users.id, { onDelete: 'set null' }),
+  respondentEmail: varchar("respondent_email"),
+  answers: jsonb("answers").notNull(),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  createdForms: many(forms),
+  formPermissions: many(formPermissions),
+  responses: many(formResponses),
+}));
+
+export const formsRelations = relations(forms, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [forms.creatorId],
+    references: [users.id],
+  }),
+  fields: many(formFields),
+  permissions: many(formPermissions),
+  responses: many(formResponses),
+}));
+
+export const formFieldsRelations = relations(formFields, ({ one }) => ({
+  form: one(forms, {
+    fields: [formFields.formId],
+    references: [forms.id],
+  }),
+}));
+
+export const formPermissionsRelations = relations(formPermissions, ({ one }) => ({
+  form: one(forms, {
+    fields: [formPermissions.formId],
+    references: [forms.id],
+  }),
+  user: one(users, {
+    fields: [formPermissions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const formResponsesRelations = relations(formResponses, ({ one }) => ({
+  form: one(forms, {
+    fields: [formResponses.formId],
+    references: [forms.id],
+  }),
+  respondent: one(users, {
+    fields: [formResponses.respondentId],
+    references: [users.id],
+  }),
+}));
+
+// Zod schemas for validation
+export const upsertUserSchema = createInsertSchema(users);
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const insertFormSchema = createInsertSchema(forms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+});
+export type InsertForm = z.infer<typeof insertFormSchema>;
+export type Form = typeof forms.$inferSelect;
+
+export const insertFormFieldSchema = createInsertSchema(formFields).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertFormField = z.infer<typeof insertFormFieldSchema>;
+export type FormField = typeof formFields.$inferSelect;
+
+export const insertFormPermissionSchema = createInsertSchema(formPermissions).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertFormPermission = z.infer<typeof insertFormPermissionSchema>;
+export type FormPermission = typeof formPermissions.$inferSelect;
+
+export const insertFormResponseSchema = createInsertSchema(formResponses).omit({
+  id: true,
+  submittedAt: true,
+});
+export type InsertFormResponse = z.infer<typeof insertFormResponseSchema>;
+export type FormResponse = typeof formResponses.$inferSelect;
