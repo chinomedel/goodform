@@ -1,213 +1,257 @@
-import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Settings, User, Shield } from "lucide-react";
-import { RoleBadge } from "@/components/RoleBadge";
+import { Loader2, Settings as SettingsIcon, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AppConfig } from "@shared/schema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const configSchema = z.object({
+  appName: z.string().min(1, "El nombre de la aplicación es requerido"),
+  logoUrl: z.string().url("Debe ser una URL válida").optional().or(z.literal("")),
+  faviconUrl: z.string().url("Debe ser una URL válida").optional().or(z.literal("")),
+  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Debe ser un color hexadecimal válido (ej: #6366f1)"),
+});
+
+type ConfigFormValues = z.infer<typeof configSchema>;
 
 export default function SettingsPage() {
-  const { user } = useAuth();
-  const [profileData, setProfileData] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
+  const { toast } = useToast();
+  
+  const { data: config, isLoading } = useQuery<AppConfig>({
+    queryKey: ["/api/config"],
   });
+
+  const form = useForm<ConfigFormValues>({
+    resolver: zodResolver(configSchema),
+    values: config ? {
+      appName: config.appName,
+      logoUrl: config.logoUrl || "",
+      faviconUrl: config.faviconUrl || "",
+      primaryColor: config.primaryColor,
+    } : undefined,
+  });
+
+  const updateConfigMutation = useMutation({
+    mutationFn: async (data: ConfigFormValues) => {
+      const res = await apiRequest("PATCH", "/api/config", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/config"] });
+      toast({
+        title: "Configuración actualizada",
+        description: "Los cambios se han guardado correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al actualizar configuración",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: ConfigFormValues) => {
+    updateConfigMutation.mutate(data);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" data-testid="loading-spinner" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <Settings className="h-8 w-8 text-primary" />
+        <SettingsIcon className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-3xl font-semibold">Configuración</h1>
           <p className="text-muted-foreground">
-            Administra tu cuenta y preferencias del sistema
+            Configura la apariencia y branding de la aplicación
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Perfil del Usuario */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              <CardTitle>Información Personal</CardTitle>
-            </div>
-            <CardDescription>
-              Actualiza tu información de perfil
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Nombre</Label>
-              <Input
-                id="firstName"
-                value={profileData.firstName}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, firstName: e.target.value })
-                }
-                placeholder="Tu nombre"
-                data-testid="input-firstname"
+      <Card>
+        <CardHeader>
+          <CardTitle>Configuración General de la Aplicación</CardTitle>
+          <CardDescription>
+            Personaliza el nombre, logo y colores de la aplicación
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="appName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de la Aplicación</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="GoodForm" 
+                        data-testid="input-app-name"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Este nombre aparecerá en el título y en toda la aplicación
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Apellido</Label>
-              <Input
-                id="lastName"
-                value={profileData.lastName}
-                onChange={(e) =>
-                  setProfileData({ ...profileData, lastName: e.target.value })
-                }
-                placeholder="Tu apellido"
-                data-testid="input-lastname"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={profileData.email}
-                disabled
-                data-testid="input-email"
-              />
-              <p className="text-xs text-muted-foreground">
-                El email no se puede cambiar
-              </p>
-            </div>
-            <Button className="w-full" disabled data-testid="button-save-profile">
-              Guardar Cambios
-            </Button>
-          </CardContent>
-        </Card>
 
-        {/* Información de la Cuenta */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              <CardTitle>Información de la Cuenta</CardTitle>
-            </div>
-            <CardDescription>
-              Detalles de tu cuenta y permisos
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Rol actual</Label>
-              <div>
-                <RoleBadge role={user?.role || "gestor"} />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Tu rol determina los permisos en el sistema
-              </p>
-            </div>
-            <Separator />
-            <div className="space-y-2">
-              <Label>Fecha de registro</Label>
-              <p className="text-sm">
-                {user?.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString("es-ES", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : "-"}
-              </p>
-            </div>
-            <Separator />
-            <div className="space-y-2">
-              <Label>ID de usuario</Label>
-              <p className="text-xs font-mono text-muted-foreground break-all">
-                {user?.id}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+              <FormField
+                control={form.control}
+                name="logoUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL del Logo</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="https://ejemplo.com/logo.png" 
+                        data-testid="input-logo-url"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      URL pública del logo de la aplicación (opcional)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {/* Seguridad */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Seguridad</CardTitle>
-            <CardDescription>
-              Gestiona la seguridad de tu cuenta
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Contraseña actual</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                placeholder="••••••••"
-                disabled
-                data-testid="input-current-password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">Nueva contraseña</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                placeholder="••••••••"
-                disabled
-                data-testid="input-new-password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                disabled
-                data-testid="input-confirm-password"
-              />
-            </div>
-            <Button className="w-full" disabled data-testid="button-change-password">
-              Cambiar Contraseña
-            </Button>
-          </CardContent>
-        </Card>
+              {config?.logoUrl && (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-md">
+                  <img 
+                    src={config.logoUrl} 
+                    alt="Logo preview" 
+                    className="h-16 w-16 object-contain"
+                    data-testid="img-logo-preview"
+                  />
+                  <span className="text-sm text-muted-foreground">Vista previa del logo actual</span>
+                </div>
+              )}
 
-        {/* Preferencias */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferencias</CardTitle>
-            <CardDescription>
-              Personaliza tu experiencia
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Notificaciones por email</Label>
-                <p className="text-xs text-muted-foreground">
-                  Recibe notificaciones sobre nuevas respuestas
-                </p>
+              <FormField
+                control={form.control}
+                name="faviconUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL del Favicon</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="https://ejemplo.com/favicon.ico" 
+                        data-testid="input-favicon-url"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      URL pública del favicon (ícono de pestaña) (opcional)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {config?.faviconUrl && (
+                <div className="flex items-center gap-3 p-4 bg-muted rounded-md">
+                  <img 
+                    src={config.faviconUrl} 
+                    alt="Favicon preview" 
+                    className="h-8 w-8 object-contain"
+                    data-testid="img-favicon-preview"
+                  />
+                  <span className="text-sm text-muted-foreground">Vista previa del favicon actual</span>
+                </div>
+              )}
+
+              <FormField
+                control={form.control}
+                name="primaryColor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color Primario</FormLabel>
+                    <div className="flex gap-3">
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          placeholder="#6366f1" 
+                          data-testid="input-primary-color"
+                          className="flex-1"
+                        />
+                      </FormControl>
+                      <div 
+                        className="w-16 h-10 rounded-md border border-border"
+                        style={{ backgroundColor: field.value }}
+                        data-testid="color-preview"
+                      />
+                    </div>
+                    <FormDescription>
+                      Color principal de la aplicación en formato hexadecimal (ej: #6366f1)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={updateConfigMutation.isPending}
+                  data-testid="button-save-config"
+                >
+                  {updateConfigMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Guardar Cambios
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button variant="outline" size="sm" disabled data-testid="button-toggle-notifications">
-                Desactivado
-              </Button>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Idioma</Label>
-                <p className="text-xs text-muted-foreground">
-                  Idioma de la interfaz
-                </p>
-              </div>
-              <Button variant="outline" size="sm" disabled data-testid="button-language">
-                Español
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Información Adicional</CardTitle>
+          <CardDescription>
+            Detalles sobre la configuración de auto-hosting
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            Esta aplicación está diseñada para ser auto-hospedada. Los cambios de configuración
+            se aplicarán inmediatamente para todos los usuarios.
+          </p>
+          <p>
+            <strong>Nota sobre las imágenes:</strong> Para el logo y favicon, debes subir las imágenes
+            a un servicio de hosting externo (como Imgur, Cloudinary, o tu propio servidor) y pegar
+            las URLs públicas en los campos correspondientes.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
