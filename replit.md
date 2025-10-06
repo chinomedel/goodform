@@ -48,6 +48,7 @@ Esquema completo en `shared/schema.ts`:
 - `form_responses` - Respuestas de formularios
 - `form_permissions` - Permisos colaborativos
 - `sessions` - Sesiones de Passport
+- `app_config` - Configuración global de la aplicación (single-row, id='default')
 
 ## Flujo de Autenticación
 
@@ -127,10 +128,29 @@ Esquema completo en `shared/schema.ts`:
 - `GET /api/users` - Listar usuarios
 - `PATCH /api/users/:id/role` - Cambiar rol
 
+### Configuración (Admin)
+- `GET /api/config` - Obtener configuración global de la aplicación
+- `PATCH /api/config` - Actualizar configuración (appName, logoUrl, faviconUrl, primaryColor)
+
 ## Características Técnicas
 
 ### Auto-guardado
 El constructor de formularios implementa auto-guardado con debounce de 1 segundo para título y descripción.
+
+### Configuración de la Aplicación
+La página de Configuración permite a los administradores personalizar la aplicación:
+- **Nombre de la aplicación**: Personalizable para self-hosting
+- **Logo URL**: URL del logo corporativo con preview en tiempo real
+- **Favicon URL**: URL del favicon con preview en tiempo real
+- **Color primario**: Color de la marca con preview visual
+- Previsualizaciones en tiempo real usando `form.watch()`
+- Los campos opcionales (logo/favicon) pueden ser limpiados
+- Backend normaliza strings vacíos a null automáticamente
+
+### Página de Usuarios
+- Lista todos los usuarios con sus roles y fechas de registro
+- Permite cambiar roles de usuarios (solo admin)
+- Muestra estado vacío amigable en instalaciones nuevas sin usuarios
 
 ### Validación
 - Frontend: React Hook Form con Zod
