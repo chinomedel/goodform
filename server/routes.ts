@@ -304,7 +304,7 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.getUser(userId);
       
       // Only creator or admin can delete
-      if (form.creatorId !== userId && user?.role !== 'admin') {
+      if (form.creatorId !== userId && (!user || !isAdmin(user.role))) {
         return res.status(403).json({ message: "Not authorized to delete this form" });
       }
 
@@ -407,7 +407,7 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.getUser(userId);
       
       // Only creator or admin can manage permissions
-      if (form.creatorId !== userId && user?.role !== 'admin') {
+      if (form.creatorId !== userId && (!user || !isAdmin(user.role))) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
