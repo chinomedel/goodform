@@ -8,6 +8,7 @@ import {
   insertFormFieldSchema,
   insertFormPermissionSchema,
   insertFormResponseSchema,
+  insertAppConfigSchema,
 } from "@shared/schema";
 import ExcelJS from 'exceljs';
 
@@ -518,6 +519,28 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // App configuration (Admin only)
+  app.get('/api/config', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+    try {
+      const config = await storage.getAppConfig();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching config:", error);
+      res.status(500).json({ message: "Failed to fetch configuration" });
+    }
+  });
+
+  app.patch('/api/config', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+    try {
+      const configData = insertAppConfigSchema.parse(req.body);
+      const updatedConfig = await storage.updateAppConfig(configData);
+      res.json(updatedConfig);
+    } catch (error) {
+      console.error("Error updating config:", error);
+      res.status(400).json({ message: "Failed to update configuration" });
     }
   });
 

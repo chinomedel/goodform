@@ -4,6 +4,7 @@ import {
   formFields,
   formPermissions,
   formResponses,
+  appConfig,
   type User,
   type InsertUser,
   type Form,
@@ -14,6 +15,8 @@ import {
   type InsertFormPermission,
   type FormResponse,
   type InsertFormResponse,
+  type AppConfig,
+  type InsertAppConfig,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -62,6 +65,10 @@ export interface IStorage {
     publishedForms: number;
     draftForms: number;
   }>;
+  
+  // App configuration
+  getAppConfig(): Promise<AppConfig>;
+  updateAppConfig(config: Partial<InsertAppConfig>): Promise<AppConfig>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -269,6 +276,40 @@ export class DatabaseStorage implements IStorage {
       publishedForms,
       draftForms,
     };
+  }
+
+  // App configuration
+  async getAppConfig(): Promise<AppConfig> {
+    const [config] = await db.select().from(appConfig).where(eq(appConfig.id, 'default'));
+    
+    if (!config) {
+      const [newConfig] = await db.insert(appConfig).values({
+        id: 'default',
+        appName: 'GoodForm',
+        primaryColor: '#6366f1',
+      }).returning();
+      return newConfig;
+    }
+    
+    return config;
+  }
+
+  async updateAppConfig(configData: Partial<InsertAppConfig>): Promise<AppConfig> {
+    const [updated] = await db
+      .update(appConfig)
+      .set({ ...configData, updatedAt: new Date() })
+      .where(eq(appConfig.id, 'default'))
+      .returning();
+    
+    if (!updated) {
+      const [newConfig] = await db.insert(appConfig).values({
+        id: 'default',
+        ...configData,
+      }).returning();
+      return newConfig;
+    }
+    
+    return updated;
   }
 }
 
