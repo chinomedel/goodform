@@ -137,10 +137,20 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Creación de usuarios solo disponible en modo auto-host" });
       }
 
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, firstName, lastName, roleId } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+
+      const validRoles = isSelfHostedMode() 
+        ? ['admin_auto_host', 'visualizador_auto_host']
+        : ['super_admin', 'cliente_saas'];
+      
+      if (!roleId || !validRoles.includes(roleId)) {
+        return res.status(400).json({ 
+          message: `Rol inválido. Roles válidos: ${validRoles.join(', ')}` 
+        });
       }
 
       const existingUser = await storage.getUserByEmail(email);
@@ -154,7 +164,7 @@ export function registerRoutes(app: Express): Server {
         password: hashedPassword,
         firstName,
         lastName,
-        roleId: 'visualizador_auto_host',
+        roleId,
         isSuperAdmin: false,
       });
 

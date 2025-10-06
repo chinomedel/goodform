@@ -16,17 +16,118 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { User } from "@shared/schema";
+import { User, insertUserSchema } from "@shared/schema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useState, useEffect, useMemo } from "react";
 
 export default function UsersPage() {
   const { toast } = useToast();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
+  });
+
+  const { data: setupStatus } = useQuery<{ setupCompleted: boolean; mode: 'saas' | 'self-hosted' }>({
+    queryKey: ["/api/setup/status"],
+  });
+
+  const isSelfHosted = setupStatus?.mode === 'self-hosted';
+  
+  const validRoles = isSelfHosted 
+    ? ['admin_auto_host', 'visualizador_auto_host']
+    : ['super_admin', 'cliente_saas'];
+
+  const createUserFormSchema = useMemo(() => 
+    insertUserSchema.extend({
+      password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+      email: z.string().email("Email inválido"),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      roleId: z.string().refine((val) => validRoles.includes(val), {
+        message: `Rol inválido. Selecciona uno de los roles válidos: ${validRoles.join(', ')}`,
+      }),
+    }),
+    [validRoles]
+  );
+
+  type CreateUserFormData = z.infer<typeof createUserFormSchema>;
+
+  const defaultRoleId = validRoles[0] || 'visualizador_auto_host';
+
+  const form = useForm<CreateUserFormData>({
+    resolver: zodResolver(createUserFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      roleId: defaultRoleId,
+    },
+  });
+
+  useEffect(() => {
+    if (setupStatus) {
+      form.reset({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        roleId: defaultRoleId,
+      });
+    }
+  }, [setupStatus, defaultRoleId, form]);
+
+  const createUserMutation = useMutation({
+    mutationFn: async (data: CreateUserFormData) => {
+      const res = await apiRequest("POST", "/api/users", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Usuario creado",
+        description: "El usuario ha sido creado exitosamente",
+      });
+      setIsDialogOpen(false);
+      form.reset({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        roleId: defaultRoleId,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al crear usuario",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const updateRoleMutation = useMutation({
@@ -49,6 +150,10 @@ export default function UsersPage() {
       });
     },
   });
+
+  const onSubmit = (data: CreateUserFormData) => {
+    createUserMutation.mutate(data);
+  };
 
   const getRoleBadge = (role: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -94,10 +199,164 @@ export default function UsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Usuarios del Sistema</CardTitle>
-          <CardDescription>
-            Total de usuarios: {users?.length || 0}
-          </CardDescription>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <CardTitle>Usuarios del Sistema</CardTitle>
+              <CardDescription>
+                Total de usuarios: {users?.length || 0}
+              </CardDescription>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-user" disabled={!setupStatus}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Crear Usuario
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]" data-testid="dialog-create-user">
+                <DialogHeader>
+                  <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                  <DialogDescription>
+                    Completa los datos para crear un nuevo usuario en el sistema
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="usuario@ejemplo.com"
+                              data-testid="input-email"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contraseña *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="password"
+                              placeholder="Mínimo 6 caracteres"
+                              data-testid="input-password"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Juan"
+                                data-testid="input-firstname"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Apellido</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Pérez"
+                                data-testid="input-lastname"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="roleId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Rol *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger data-testid="select-role">
+                                <SelectValue placeholder="Selecciona un rol" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {validRoles.includes('admin_auto_host') && (
+                                <SelectItem value="admin_auto_host">Admin Auto-Host</SelectItem>
+                              )}
+                              {validRoles.includes('visualizador_auto_host') && (
+                                <SelectItem value="visualizador_auto_host">Visualizador Auto-Host</SelectItem>
+                              )}
+                              {validRoles.includes('super_admin') && (
+                                <SelectItem value="super_admin">Super Admin</SelectItem>
+                              )}
+                              {validRoles.includes('cliente_saas') && (
+                                <SelectItem value="cliente_saas">Cliente SaaS</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex gap-3 justify-end pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        data-testid="button-cancel"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={createUserMutation.isPending}
+                        data-testid="button-submit"
+                      >
+                        {createUserMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Creando...
+                          </>
+                        ) : (
+                          "Crear Usuario"
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           {users && users.length > 0 ? (
