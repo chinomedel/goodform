@@ -101,10 +101,10 @@ export default function LicensesPage() {
   // Mutation para crear licencia
   const createLicenseMutation = useMutation({
     mutationFn: async (data: LicenseFormData) => {
-      const response = await apiRequest("POST", "/api/admin/licenses/issue", data);
+      const response = await apiRequest<License>("POST", "/api/admin/licenses/issue", data);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: License) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/licenses"] });
       toast({
         title: "Licencia Generada",
