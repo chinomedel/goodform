@@ -23,7 +23,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUserRole(userId: string, role: 'admin' | 'gestor' | 'visualizador'): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  updateUserRole(userId: string, role: 'admin' | 'gestor' | 'visualizador' | 'cliente'): Promise<User>;
   
   // Form operations
   createForm(form: InsertForm): Promise<Form>;
@@ -83,7 +84,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserRole(userId: string, role: 'admin' | 'gestor' | 'visualizador'): Promise<User> {
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUserRole(userId: string, role: 'admin' | 'gestor' | 'visualizador' | 'cliente'): Promise<User> {
     const [user] = await db
       .update(users)
       .set({ role, updatedAt: new Date() })
