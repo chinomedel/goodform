@@ -44,6 +44,7 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 - **Scrypt** para hashing de contraseñas
 - **connect-pg-simple** para almacenamiento de sesiones en PostgreSQL
 - **ExcelJS** para exportación de datos
+- **Inicialización automática** de base de datos en el primer arranque
 
 ### Frontend (`client/`)
 - **React** con TypeScript
@@ -61,6 +62,13 @@ Esquema completo en `shared/schema.ts`:
 - `form_permissions` - Permisos colaborativos
 - `sessions` - Sesiones de Passport
 - `app_config` - Configuración global de la aplicación (single-row, id='default')
+- `deployments` - Configuración de deployment (Auto-Host)
+- `licenses` - Códigos de licencia (SaaS)
+
+**Inicialización Automática:**
+- Las tablas se crean automáticamente en el primer inicio
+- Script `server/init-db.ts` detecta si la BD está vacía
+- No requiere ejecutar migraciones manualmente
 
 ## Flujo de Autenticación
 

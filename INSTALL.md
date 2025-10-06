@@ -32,6 +32,8 @@ cp .env.example .env
 goodform start
 ```
 
+> **Nota:** Las tablas de la base de datos se crean automáticamente en el primer inicio.
+
 5. **Acceder al wizard de setup:**
 - Abre http://localhost:5000/setup
 - Crea tu cuenta de administrador
@@ -93,6 +95,8 @@ cp .env.example .env
 ```bash
 docker-compose up -d
 ```
+
+> **Nota:** Las tablas de PostgreSQL se crean automáticamente en el primer inicio.
 
 4. **Ver logs:**
 ```bash

@@ -77,6 +77,8 @@ DEPLOYMENT_MODE=saas         # Para SaaS (por defecto)
 
 ## 🎯 Inicio Rápido
 
+> **✨ Inicialización Automática:** La base de datos y todas las tablas se crean automáticamente en el primer inicio. No necesitas ejecutar migraciones manualmente.
+
 1. **Primera vez - Completar Setup:**
    - Visita `http://localhost:5000/setup`
    - Crea tu cuenta de administrador
