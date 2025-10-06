@@ -1,44 +1,36 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { LandingPage } from "@/components/LandingPage";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 import FormsPage from "@/pages/FormsPage";
 import DashboardPage from "@/pages/DashboardPage";
 import FormBuilderPage from "@/pages/FormBuilderPage";
 import FormResponsesPage from "@/pages/FormResponsesPage";
 import PublicFormPage from "@/pages/PublicFormPage";
+import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
-import { getCurrentUser } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 function AuthenticatedApp() {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['/api/auth/user'],
-    queryFn: getCurrentUser,
-    retry: false,
-  });
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen" data-testid="loading-auth">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
       </div>
     );
   }
 
-  if (error || !user) {
-    return (
-      <Switch>
-        <Route path="/" component={LandingPage} />
-        <Route path="/public/:id" component={PublicFormPage} />
-        <Route component={() => <Redirect to="/" />} />
-      </Switch>
-    );
+  if (!user) {
+    return null; // Let ProtectedRoute handle redirect
   }
 
   const style = {
@@ -73,10 +65,19 @@ function AuthenticatedApp() {
 function Router() {
   return (
     <Switch>
+      {/* Public routes */}
       <Route path="/public/:id" component={PublicFormPage} />
-      <Route>
-        <AuthenticatedApp />
-      </Route>
+      <Route path="/auth" component={AuthPage} />
+      
+      {/* Protected routes */}
+      <ProtectedRoute path="/" component={AuthenticatedApp} />
+      <ProtectedRoute path="/forms" component={AuthenticatedApp} />
+      <ProtectedRoute path="/builder" component={AuthenticatedApp} />
+      <ProtectedRoute path="/builder/:id" component={AuthenticatedApp} />
+      <ProtectedRoute path="/responses/:id" component={AuthenticatedApp} />
+      
+      {/* Fallback */}
+      <Route component={NotFound} />
     </Switch>
   );
 }
@@ -84,10 +85,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
