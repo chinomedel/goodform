@@ -4,10 +4,11 @@
 GoodForm es una plataforma web completa en español para gestión de formularios con las siguientes capacidades:
 - Constructor de formularios con arrastrar y soltar
 - Autenticación email/password con hashing seguro (scrypt)
-- Sistema de roles (Admin, Gestor, Visualizador)
+- Sistema de roles (Admin, Gestor, Visualizador, Cliente)
 - Permisos granulares por formulario
 - Exportación a Excel y dashboard de análisis
 - Formularios públicos y privados
+- Páginas de administración para gestión de usuarios y configuración (solo admin)
 
 ## Estado del Proyecto
 ✅ **Completado:**
@@ -19,6 +20,8 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 - Constructor de formularios con auto-guardado
 - Sistema de respuestas públicas
 - Exportación a Excel
+- Sistema de roles de 4 niveles (Admin, Gestor, Visualizador, Cliente)
+- Páginas de administración (Usuarios y Configuración) exclusivas para admins
 
 ## Arquitectura
 
@@ -68,9 +71,10 @@ Esquema completo en `shared/schema.ts`:
 ## Roles y Permisos
 
 ### Roles del Sistema
-- **Admin**: Acceso completo, puede gestionar usuarios
+- **Admin**: Acceso completo, puede gestionar usuarios y configuración del sistema
 - **Gestor**: Puede crear, editar y compartir formularios
 - **Visualizador**: Solo puede ver respuestas de formularios compartidos
+- **Cliente**: Rol básico para usuarios externos, acceso limitado
 
 ### Permisos por Formulario
 - **Owner**: Creador del formulario, control total
@@ -89,6 +93,8 @@ Esquema completo en `shared/schema.ts`:
 - `/builder` - Crear nuevo formulario
 - `/builder/:id` - Editar formulario existente
 - `/responses/:id` - Ver respuestas de formulario
+- `/users` - Gestión de usuarios (solo admin)
+- `/settings` - Configuración de cuenta y sistema (solo admin)
 
 ## API Endpoints
 
