@@ -59,6 +59,8 @@ export default function FormBuilderPage() {
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
 
   const { data: formData, isLoading } = useQuery({
     queryKey: ["/api/forms", formId],
@@ -229,6 +231,34 @@ export default function FormBuilderPage() {
     setFields(fields.map((f) => 
       f.id === fieldId ? { ...f, label: newLabel } : f
     ));
+  };
+
+  const handleDragStart = (fieldId: string) => {
+    setDraggedFieldId(fieldId);
+  };
+
+  const handleDragOver = (targetFieldId: string) => {
+    if (!draggedFieldId || draggedFieldId === targetFieldId) return;
+
+    const draggedIndex = fields.findIndex(f => f.id === draggedFieldId);
+    const targetIndex = fields.findIndex(f => f.id === targetFieldId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newFields = [...fields];
+    const [draggedField] = newFields.splice(draggedIndex, 1);
+    newFields.splice(targetIndex, 0, draggedField);
+
+    const reorderedFields = newFields.map((field, index) => ({
+      ...field,
+      order: index,
+    }));
+
+    setFields(reorderedFields);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedFieldId(null);
   };
 
   const handleSave = () => {
@@ -436,6 +466,9 @@ export default function FormBuilderPage() {
                   onDelete={() => deleteField(field.id)}
                   onSettings={() => console.log("Settings", field.id)}
                   onLabelChange={(newLabel) => updateFieldLabel(field.id, newLabel)}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
                 />
               ))}
               

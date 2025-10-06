@@ -14,6 +14,9 @@ interface FormBuilderFieldProps {
   onDelete?: () => void;
   onSettings?: () => void;
   onLabelChange?: (newLabel: string) => void;
+  onDragStart?: (id: string) => void;
+  onDragOver?: (id: string) => void;
+  onDragEnd?: () => void;
 }
 
 const fieldIcons: Record<FieldType, string> = {
@@ -35,11 +38,24 @@ export function FormBuilderField({
   onDelete,
   onSettings,
   onLabelChange,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
 }: FormBuilderFieldProps) {
   return (
-    <Card className="p-4 mb-2" data-testid={`field-${id}`}>
+    <Card 
+      className="p-4 mb-2" 
+      data-testid={`field-${id}`}
+      draggable
+      onDragStart={() => onDragStart?.(id)}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver?.(id);
+      }}
+      onDragEnd={onDragEnd}
+    >
       <div className="flex items-start gap-3">
-        <button className="cursor-grab pt-1 text-muted-foreground hover-elevate p-1 rounded">
+        <button className="cursor-grab active:cursor-grabbing pt-1 text-muted-foreground hover-elevate p-1 rounded">
           <GripVertical className="h-4 w-4" />
         </button>
         
