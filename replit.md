@@ -139,13 +139,21 @@ El constructor de formularios implementa auto-guardado con debounce de 1 segundo
 
 ### Configuración de la Aplicación
 La página de Configuración permite a los administradores personalizar la aplicación:
-- **Nombre de la aplicación**: Personalizable para self-hosting
-- **Logo URL**: URL del logo corporativo con preview en tiempo real
-- **Favicon URL**: URL del favicon con preview en tiempo real
-- **Color primario**: Color de la marca con preview visual
+- **Nombre de la aplicación**: Personalizable para self-hosting, se refleja en sidebar, landing page y título del documento
+- **Logo URL**: URL del logo corporativo con preview en tiempo real, se muestra en sidebar y landing page
+- **Favicon URL**: URL del favicon con preview en tiempo real, se aplica dinámicamente al documento
+- **Color primario**: Color de la marca con tres opciones de selección:
+  - Selector de color nativo de HTML5
+  - Paleta de 12 colores predefinidos
+  - Input de texto para códigos hexadecimales manuales
 - Previsualizaciones en tiempo real usando `form.watch()`
 - Los campos opcionales (logo/favicon) pueden ser limpiados
 - Backend normaliza strings vacíos a null automáticamente
+- **ConfigProvider**: Componente que aplica dinámicamente:
+  - Convierte color hex a HSL y actualiza variables CSS (--primary, --sidebar-primary, --ring)
+  - Actualiza favicon del documento
+  - Actualiza título del documento con el nombre de la app
+  - Se ejecuta al inicio y al cambiar la configuración
 
 ### Página de Usuarios
 - Lista todos los usuarios con sus roles y fechas de registro
