@@ -31,10 +31,10 @@ export default function SettingsPage() {
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configSchema),
     values: config ? {
-      appName: config.appName,
-      logoUrl: config.logoUrl || "",
-      faviconUrl: config.faviconUrl || "",
-      primaryColor: config.primaryColor,
+      appName: config.appName || "GoodForm",
+      logoUrl: config.logoUrl ?? "",
+      faviconUrl: config.faviconUrl ?? "",
+      primaryColor: config.primaryColor || "#6366f1",
     } : undefined,
   });
 
@@ -135,15 +135,15 @@ export default function SettingsPage() {
                 )}
               />
 
-              {config?.logoUrl && (
+              {form.watch("logoUrl") && (
                 <div className="flex items-center gap-3 p-4 bg-muted rounded-md">
                   <img 
-                    src={config.logoUrl} 
+                    src={form.watch("logoUrl")} 
                     alt="Logo preview" 
                     className="h-16 w-16 object-contain"
                     data-testid="img-logo-preview"
                   />
-                  <span className="text-sm text-muted-foreground">Vista previa del logo actual</span>
+                  <span className="text-sm text-muted-foreground">Vista previa del logo</span>
                 </div>
               )}
 
@@ -168,15 +168,15 @@ export default function SettingsPage() {
                 )}
               />
 
-              {config?.faviconUrl && (
+              {form.watch("faviconUrl") && (
                 <div className="flex items-center gap-3 p-4 bg-muted rounded-md">
                   <img 
-                    src={config.faviconUrl} 
+                    src={form.watch("faviconUrl")} 
                     alt="Favicon preview" 
                     className="h-8 w-8 object-contain"
                     data-testid="img-favicon-preview"
                   />
-                  <span className="text-sm text-muted-foreground">Vista previa del favicon actual</span>
+                  <span className="text-sm text-muted-foreground">Vista previa del favicon</span>
                 </div>
               )}
 

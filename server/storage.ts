@@ -295,16 +295,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateAppConfig(configData: Partial<InsertAppConfig>): Promise<AppConfig> {
+    const normalizedData = {
+      ...configData,
+      logoUrl: configData.logoUrl === "" ? null : configData.logoUrl,
+      faviconUrl: configData.faviconUrl === "" ? null : configData.faviconUrl,
+      updatedAt: new Date(),
+    };
+
     const [updated] = await db
       .update(appConfig)
-      .set({ ...configData, updatedAt: new Date() })
+      .set(normalizedData)
       .where(eq(appConfig.id, 'default'))
       .returning();
     
     if (!updated) {
       const [newConfig] = await db.insert(appConfig).values({
         id: 'default',
-        ...configData,
+        ...normalizedData,
       }).returning();
       return newConfig;
     }

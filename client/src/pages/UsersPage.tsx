@@ -100,62 +100,72 @@ export default function UsersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Rol Actual</TableHead>
-                <TableHead>Cambiar Rol</TableHead>
-                <TableHead>Fecha de Registro</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users?.map((user) => (
-                <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
-                  <TableCell>
-                    <div className="font-medium">
-                      {user.firstName || user.lastName
-                        ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
-                        : "Sin nombre"}
-                    </div>
-                  </TableCell>
-                  <TableCell data-testid={`text-email-${user.id}`}>
-                    {user.email}
-                  </TableCell>
-                  <TableCell>{getRoleBadge(user.role)}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={user.role}
-                      onValueChange={(newRole) =>
-                        updateRoleMutation.mutate({ userId: user.id, role: newRole })
-                      }
-                      disabled={updateRoleMutation.isPending}
-                    >
-                      <SelectTrigger className="w-40" data-testid={`select-role-${user.id}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="gestor">Gestor</SelectItem>
-                        <SelectItem value="visualizador">Visualizador</SelectItem>
-                        <SelectItem value="cliente">Cliente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {user.createdAt
-                      ? new Date(user.createdAt).toLocaleDateString("es-ES", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "-"}
-                  </TableCell>
+          {users && users.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Rol Actual</TableHead>
+                  <TableHead>Cambiar Rol</TableHead>
+                  <TableHead>Fecha de Registro</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                    <TableCell>
+                      <div className="font-medium">
+                        {user.firstName || user.lastName
+                          ? `${user.firstName || ""} ${user.lastName || ""}`.trim()
+                          : "Sin nombre"}
+                      </div>
+                    </TableCell>
+                    <TableCell data-testid={`text-email-${user.id}`}>
+                      {user.email}
+                    </TableCell>
+                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={user.role}
+                        onValueChange={(newRole) =>
+                          updateRoleMutation.mutate({ userId: user.id, role: newRole })
+                        }
+                        disabled={updateRoleMutation.isPending}
+                      >
+                        <SelectTrigger className="w-40" data-testid={`select-role-${user.id}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="gestor">Gestor</SelectItem>
+                          <SelectItem value="visualizador">Visualizador</SelectItem>
+                          <SelectItem value="cliente">Cliente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleDateString("es-ES", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Users className="h-12 w-12 text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay usuarios registrados</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Esta es una instalación nueva. Los usuarios aparecerán aquí cuando se registren en el sistema.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

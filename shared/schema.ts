@@ -182,6 +182,9 @@ export type FormResponse = typeof formResponses.$inferSelect;
 export const insertAppConfigSchema = createInsertSchema(appConfig).omit({
   id: true,
   updatedAt: true,
+}).extend({
+  logoUrl: z.string().url("Debe ser una URL válida").nullable().optional().or(z.literal("")),
+  faviconUrl: z.string().url("Debe ser una URL válida").nullable().optional().or(z.literal("")),
 });
 export type InsertAppConfig = z.infer<typeof insertAppConfigSchema>;
 export type AppConfig = typeof appConfig.$inferSelect;
