@@ -85,6 +85,15 @@ export const formResponses = pgTable("form_responses", {
   submittedAt: timestamp("submitted_at").defaultNow(),
 });
 
+export const appConfig = pgTable("app_config", {
+  id: varchar("id").primaryKey().default('default'),
+  appName: varchar("app_name").notNull().default('GoodForm'),
+  logoUrl: text("logo_url"),
+  faviconUrl: text("favicon_url"),
+  primaryColor: varchar("primary_color").notNull().default('#6366f1'),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdForms: many(forms),
@@ -169,3 +178,10 @@ export const insertFormResponseSchema = createInsertSchema(formResponses).omit({
 });
 export type InsertFormResponse = z.infer<typeof insertFormResponseSchema>;
 export type FormResponse = typeof formResponses.$inferSelect;
+
+export const insertAppConfigSchema = createInsertSchema(appConfig).omit({
+  id: true,
+  updatedAt: true,
+});
+export type InsertAppConfig = z.infer<typeof insertAppConfigSchema>;
+export type AppConfig = typeof appConfig.$inferSelect;
