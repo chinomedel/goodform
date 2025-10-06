@@ -14,7 +14,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const userRoleEnum = pgEnum('user_role', ['admin', 'gestor', 'visualizador', 'cliente']);
+export const userRoleEnum = pgEnum('user_role', ['admin_auto_host', 'visualizador_auto_host', 'cliente_saas', 'super_admin']);
 export const formStatusEnum = pgEnum('form_status', ['draft', 'published']);
 export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']);
 export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
@@ -41,7 +41,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: userRoleEnum("role").notNull().default('gestor'),
+  role: userRoleEnum("role").notNull().default('cliente_saas'),
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

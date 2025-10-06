@@ -121,8 +121,12 @@ export function registerRoutes(app: Express): Server {
       const { userId } = req.params;
       const { role } = req.body;
 
-      if (!['admin', 'gestor', 'visualizador', 'cliente'].includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
+      const validRoles = isSelfHostedMode() 
+        ? ['admin_auto_host', 'visualizador_auto_host']
+        : ['super_admin', 'cliente_saas'];
+      
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: "Rol inválido" });
       }
 
       const user = await storage.updateUserRole(userId, role);
@@ -583,7 +587,8 @@ export function registerRoutes(app: Express): Server {
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'admin',
+        role: 'admin_auto_host',
+        isSuperAdmin: false,
       });
 
       let deployment = await storage.getDeployment();

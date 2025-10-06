@@ -123,7 +123,8 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'gestor',
+        role: 'cliente_saas',
+        isSuperAdmin: false,
       });
 
       req.login(user, (err) => {
