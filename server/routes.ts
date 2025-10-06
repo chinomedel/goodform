@@ -11,7 +11,8 @@ import {
   insertAppConfigSchema,
 } from "@shared/schema";
 import ExcelJS from 'exceljs';
-import { isSelfHostedMode, hasValidLicense } from "./deployment";
+import { isSelfHostedMode, hasValidLicense, isSetupCompleted, isSaasMode } from "./deployment";
+import { hashPassword } from "./auth";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
@@ -550,6 +551,169 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Setup wizard for self-hosted (no auth required)
+  app.post('/api/setup', async (req: any, res) => {
+    try {
+      if (isSaasMode()) {
+        return res.status(403).json({ message: "Setup no disponible en modo SaaS" });
+      }
+
+      const setupComplete = await isSetupCompleted();
+      if (setupComplete) {
+        return res.status(403).json({ message: "Setup ya completado" });
+      }
+
+      const { email, password, firstName, lastName, licenseKey } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email y contraseña son requeridos" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "El email ya está registrado" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role: 'admin',
+      });
+
+      let deployment = await storage.getDeployment();
+      if (!deployment) {
+        deployment = await storage.createDeployment({
+          mode: 'self-hosted',
+          setupCompleted: true,
+          licenseKey: licenseKey || undefined,
+        });
+      } else {
+        deployment = await storage.updateDeployment(deployment.id, {
+          setupCompleted: true,
+          licenseKey: licenseKey || undefined,
+        });
+      }
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({ user: userWithoutPassword, deployment });
+    } catch (error) {
+      console.error("Error in setup:", error);
+      res.status(500).json({ message: "Error al completar setup" });
+    }
+  });
+
+  // Check if setup is needed
+  app.get('/api/setup/status', async (req: any, res) => {
+    try {
+      const setupComplete = await isSetupCompleted();
+      const mode = isSelfHostedMode() ? 'self-hosted' : 'saas';
+      res.json({ setupCompleted: setupComplete, mode });
+    } catch (error) {
+      console.error("Error checking setup status:", error);
+      res.status(500).json({ message: "Error al verificar estado de setup" });
+    }
+  });
+
+  // License validation endpoint (for self-hosted to validate against SaaS)
+  app.post('/api/license/validate', async (req: any, res) => {
+    try {
+      if (!isSaasMode()) {
+        return res.status(403).json({ message: "Este endpoint solo está disponible en modo SaaS" });
+      }
+
+      const { licenseKey } = req.body;
+
+      if (!licenseKey) {
+        return res.status(400).json({ message: "License key es requerida" });
+      }
+
+      const license = await storage.getLicense(licenseKey);
+
+      if (!license) {
+        return res.json({ valid: false, message: "Licencia no encontrada" });
+      }
+
+      if (license.status !== 'active') {
+        return res.json({ valid: false, message: "Licencia inactiva" });
+      }
+
+      const now = new Date();
+      if (license.expiresAt < now) {
+        return res.json({ valid: false, message: "Licencia expirada" });
+      }
+
+      res.json({
+        valid: true,
+        expiresAt: license.expiresAt,
+      });
+    } catch (error) {
+      console.error("Error validating license:", error);
+      res.status(500).json({ message: "Error al validar licencia" });
+    }
+  });
+
+  // License status for self-hosted
+  app.get('/api/license/status', isAuthenticated, async (req: any, res) => {
+    try {
+      if (isSaasMode()) {
+        return res.json({
+          valid: true,
+          mode: 'saas',
+          formCount: 0,
+          formLimit: -1,
+        });
+      }
+
+      const hasLicense = await hasValidLicense();
+      const deployment = await storage.getDeployment();
+      const formCount = await storage.countForms();
+
+      res.json({
+        valid: hasLicense,
+        mode: 'self-hosted',
+        expiresAt: deployment?.validUntil || null,
+        formCount,
+        formLimit: hasLicense ? -1 : 5,
+      });
+    } catch (error) {
+      console.error("Error fetching license status:", error);
+      res.status(500).json({ message: "Error al obtener estado de licencia" });
+    }
+  });
+
+  // Activate license (self-hosted)
+  app.post('/api/license/activate', isAuthenticated, requireRole('admin'), async (req: any, res) => {
+    try {
+      if (isSaasMode()) {
+        return res.status(403).json({ message: "No disponible en modo SaaS" });
+      }
+
+      const { licenseKey } = req.body;
+
+      if (!licenseKey) {
+        return res.status(400).json({ message: "License key es requerida" });
+      }
+
+      const deployment = await storage.getDeployment();
+      if (!deployment) {
+        return res.status(500).json({ message: "Deployment no encontrado" });
+      }
+
+      await storage.updateDeployment(deployment.id, {
+        licenseKey,
+        lastValidated: new Date(),
+      });
+
+      res.json({ success: true, message: "Licencia activada" });
+    } catch (error) {
+      console.error("Error activating license:", error);
+      res.status(500).json({ message: "Error al activar licencia" });
     }
   });
 

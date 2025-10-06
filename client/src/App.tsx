@@ -18,6 +18,7 @@ import PublicFormPage from "@/pages/PublicFormPage";
 import UsersPage from "@/pages/UsersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import AuthPage from "@/pages/auth-page";
+import SetupPage from "@/pages/SetupPage";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -71,6 +72,7 @@ function Router() {
   return (
     <Switch>
       {/* Public routes */}
+      <Route path="/setup" component={SetupPage} />
       <Route path="/public/:id" component={PublicFormPage} />
       <Route path="/auth" component={AuthPage} />
       
