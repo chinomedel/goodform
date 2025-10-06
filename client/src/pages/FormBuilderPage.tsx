@@ -262,7 +262,7 @@ export default function FormBuilderPage() {
 
   const handlePreview = () => {
     if (formId) {
-      window.open(`/public/${formId}`, "_blank");
+      window.open(`/preview/${formId}`, "_blank");
     }
   };
 
