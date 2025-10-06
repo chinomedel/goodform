@@ -8,6 +8,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import connectPg from "connect-pg-simple";
+import { isSelfHostedMode } from "./deployment";
 
 declare global {
   namespace Express {
@@ -98,6 +99,13 @@ export function setupAuth(app: Express) {
   // Register endpoint
   app.post("/api/register", async (req, res, next) => {
     try {
+      // Block public registration in self-hosted mode
+      if (isSelfHostedMode()) {
+        return res.status(403).json({ 
+          message: "Registro público no disponible en modo auto-host. Contacta al administrador." 
+        });
+      }
+
       const { email, password, firstName, lastName } = req.body;
 
       if (!email || !password) {
