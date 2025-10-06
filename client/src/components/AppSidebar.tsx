@@ -34,7 +34,7 @@ const superAdminMenuItems = [
 ];
 
 interface AppSidebarProps {
-  userRole?: "admin_auto_host" | "super_admin" | "visualizador_auto_host" | "cliente_saas";
+  userRole?: string;
 }
 
 export function AppSidebar({ userRole = "cliente_saas" }: AppSidebarProps) {
@@ -118,7 +118,7 @@ export function AppSidebar({ userRole = "cliente_saas" }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {(user?.role === "admin_auto_host" || user?.role === "super_admin") && (
+        {(user?.roleId === "admin_auto_host" || user?.roleId === "super_admin") && (
           <SidebarGroup>
             <SidebarGroupLabel>Administración</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -168,7 +168,7 @@ export function AppSidebar({ userRole = "cliente_saas" }: AppSidebarProps) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{getUserDisplayName()}</p>
             <div className="mt-1">
-              <RoleBadge role={user?.role || userRole} />
+              <RoleBadge role={user?.roleId || userRole} />
             </div>
           </div>
         </div>
