@@ -14,7 +14,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const userRoleEnum = pgEnum('user_role', ['admin', 'gestor', 'visualizador']);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'gestor', 'visualizador', 'cliente']);
 export const formStatusEnum = pgEnum('form_status', ['draft', 'published']);
 export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']);
 export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
