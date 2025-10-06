@@ -3,7 +3,7 @@
 ## Descripción General
 GoodForm es una plataforma web completa en español para gestión de formularios con las siguientes capacidades:
 - Constructor de formularios con arrastrar y soltar
-- Autenticación con Replit Auth
+- Autenticación email/password con hashing seguro (scrypt)
 - Sistema de roles (Admin, Gestor, Visualizador)
 - Permisos granulares por formulario
 - Exportación a Excel y dashboard de análisis
@@ -13,7 +13,7 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 ✅ **Completado:**
 - Backend completo con API REST
 - Base de datos PostgreSQL con Drizzle ORM
-- Sistema de autenticación con Replit Auth
+- Sistema de autenticación email/password con passport-local
 - Frontend React con React Query
 - Dashboard con estadísticas en tiempo real
 - Constructor de formularios con auto-guardado
@@ -25,8 +25,9 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 ### Backend (`server/`)
 - **Express.js** como servidor web
 - **Drizzle ORM** para PostgreSQL
-- **Replit Auth** para autenticación OAuth
-- **Passport.js** para manejo de sesiones
+- **Passport-local** para autenticación email/password
+- **Scrypt** para hashing de contraseñas
+- **connect-pg-simple** para almacenamiento de sesiones en PostgreSQL
 - **ExcelJS** para exportación de datos
 
 ### Frontend (`client/`)
@@ -48,16 +49,21 @@ Esquema completo en `shared/schema.ts`:
 ## Flujo de Autenticación
 
 ### Rutas de Autenticación
-- `/api/login` - Inicia el flujo OAuth con Replit
-- `/api/callback` - Callback de OAuth
-- `/api/logout` - Cierra sesión
-- `/api/auth/user` - Obtiene usuario actual
+- `POST /api/register` - Registrar nuevo usuario (email, password, firstName?, lastName?)
+- `POST /api/login` - Iniciar sesión con email/password
+- `POST /api/logout` - Cerrar sesión
+- `GET /api/user` - Obtener usuario actual autenticado
+
+### Frontend
+- `/auth` - Página de login/registro con tabs
+- `useAuth` hook - Context para manejo de autenticación
+- `ProtectedRoute` - Componente para proteger rutas privadas
 
 ### Notas Importantes
-1. **Replit Auth requiere estar dentro del entorno de Replit** para funcionar correctamente
-2. Las sesiones se almacenan en PostgreSQL usando `connect-pg-simple`
-3. Los tokens se refrescan automáticamente cuando expiran
-4. Los usuarios se crean/actualizan automáticamente en el primer login
+1. **Contraseñas**: Se hashean con scrypt (salt + hash) antes de almacenar en base de datos
+2. **Sesiones**: Se almacenan en PostgreSQL usando `connect-pg-simple` con cookies httpOnly
+3. **Seguridad**: Cookies configuradas como secure/sameSite según el entorno
+4. **Roles**: Usuarios nuevos se crean como "gestor" por defecto
 
 ## Roles y Permisos
 
@@ -74,11 +80,11 @@ Esquema completo en `shared/schema.ts`:
 ## Rutas Principales
 
 ### Públicas
-- `/` - Landing page (si no autenticado)
+- `/auth` - Página de login/registro
 - `/public/:id` - Formulario público para responder
 
-### Autenticadas
-- `/` - Dashboard con estadísticas
+### Autenticadas (requieren login)
+- `/` - Dashboard con estadísticas (redirige a /auth si no autenticado)
 - `/forms` - Lista de formularios
 - `/builder` - Crear nuevo formulario
 - `/builder/:id` - Editar formulario existente
@@ -87,7 +93,10 @@ Esquema completo en `shared/schema.ts`:
 ## API Endpoints
 
 ### Autenticación
-- `GET /api/auth/user` - Usuario actual
+- `POST /api/register` - Registrar nuevo usuario
+- `POST /api/login` - Iniciar sesión
+- `POST /api/logout` - Cerrar sesión
+- `GET /api/user` - Obtener usuario actual
 
 ### Formularios
 - `GET /api/forms` - Listar formularios del usuario
@@ -122,18 +131,19 @@ El constructor de formularios implementa auto-guardado con debounce de 1 segundo
 - Backend: Validación de permisos en todas las rutas
 
 ### Seguridad
-- CSRF protection mediante cookies httpOnly
+- Contraseñas hasheadas con scrypt (salt + hash)
+- Sesiones almacenadas en PostgreSQL con cookies httpOnly
+- Cookies configuradas como secure/sameSite según entorno
 - Validación de roles y permisos en backend
 - Sanitización de entrada de usuario
+- Rutas protegidas con middleware isAuthenticated
 
 ## Variables de Entorno Requeridas
 
 ```
-DATABASE_URL - URL de PostgreSQL
-SESSION_SECRET - Secret para sesiones
-REPLIT_DOMAINS - Dominios permitidos para OAuth
-REPL_ID - ID del Repl (auto-configurado)
-ISSUER_URL - URL del emisor OAuth (opcional, default: https://replit.com/oidc)
+DATABASE_URL - URL de PostgreSQL (auto-configurado en Replit)
+SESSION_SECRET - Secret para sesiones (auto-configurado en Replit)
+NODE_ENV - Entorno de ejecución (development/production)
 ```
 
 ## Ejecutar el Proyecto
