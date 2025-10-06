@@ -2,9 +2,9 @@
 
 ## Descripción General
 GoodForm es una plataforma web completa en español para gestión de formularios con las siguientes capacidades:
-- Constructor de formularios con arrastrar y soltar
+- **Modo Dual de Constructor**: Visual (drag-and-drop) y Código (HTML/CSS/JS personalizado)
 - Autenticación email/password con hashing seguro (scrypt)
-- Sistema de roles (Admin, Gestor, Visualizador, Cliente)
+- Sistema de roles deployment-specific (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas)
 - Permisos granulares por formulario
 - Exportación a Excel y dashboard de análisis
 - Formularios públicos y privados
@@ -17,10 +17,14 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 - Sistema de autenticación email/password con passport-local
 - Frontend React con React Query
 - Dashboard con estadísticas en tiempo real
-- Constructor de formularios con auto-guardado
-- Sistema de respuestas públicas
+- **Modo Dual de Constructor:**
+  - Modo Visual: Drag-and-drop con campos predefinidos
+  - Modo Código: Editor de HTML/CSS/JS con preview en tiempo real
+  - Toggle para cambiar entre modos
+  - Auto-guardado en ambos modos
+- Sistema de respuestas públicas (renderiza según builder_mode)
 - Exportación a Excel
-- Sistema de roles de 4 niveles (Admin, Gestor, Visualizador, Cliente)
+- Sistema de roles deployment-specific (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas)
 - Páginas de administración (Usuarios y Configuración) exclusivas para admins
 - **Sistema Dual SaaS + Auto-Host:**
   - Detección de modo deployment (DEPLOYMENT_MODE)
@@ -55,9 +59,13 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 
 ### Base de Datos
 Esquema completo en `shared/schema.ts`:
-- `users` - Usuarios con roles
-- `forms` - Formularios con configuración
-- `form_fields` - Campos dinámicos de formularios
+- `users` - Usuarios con roles deployment-specific
+- `forms` - Formularios con configuración y modo constructor
+  - `builderMode` - 'visual' | 'code' (default: 'visual')
+  - `customHtml` - HTML personalizado (modo código)
+  - `customCss` - CSS personalizado (modo código)
+  - `customJs` - JavaScript personalizado (modo código)
+- `form_fields` - Campos dinámicos de formularios (modo visual)
 - `form_responses` - Respuestas de formularios
 - `form_permissions` - Permisos colaborativos
 - `sessions` - Sesiones de Passport
