@@ -15,15 +15,6 @@ export interface DashboardStats {
   draftForms: number;
 }
 
-// Auth API
-export async function getCurrentUser(): Promise<User> {
-  const response = await fetch('/api/auth/user', {
-    credentials: 'include',
-  });
-  if (!response.ok) throw new Error('Failed to fetch user');
-  return response.json();
-}
-
 // Forms API
 export async function getForms(): Promise<FormWithCount[]> {
   const response = await fetch('/api/forms', {

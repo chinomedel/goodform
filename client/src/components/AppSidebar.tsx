@@ -15,8 +15,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RoleBadge } from "./RoleBadge";
-import { useQuery } from "@tanstack/react-query";
-import { getCurrentUser } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -29,10 +28,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
   const [location] = useLocation();
-  const { data: user } = useQuery({
-    queryKey: ['/api/auth/user'],
-    queryFn: getCurrentUser,
-  });
+  const { user, logoutMutation } = useAuth();
 
   const getUserInitials = () => {
     if (!user) return 'U';
@@ -105,10 +101,11 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
           className="w-full"
           size="sm"
           data-testid="button-logout"
-          onClick={() => window.location.href = '/api/logout'}
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
         >
           <LogOut className="h-4 w-4 mr-2" />
-          Cerrar Sesión
+          {logoutMutation.isPending ? "Cerrando..." : "Cerrar Sesión"}
         </Button>
       </SidebarFooter>
     </Sidebar>

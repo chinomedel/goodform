@@ -2,8 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileText, Users, BarChart3, Lock, Globe, Share2 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { useLocation } from "wouter";
 
 export function LandingPage() {
+  const [, setLocation] = useLocation();
+  
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border sticky top-0 bg-background/95 backdrop-blur z-50">
@@ -19,13 +22,13 @@ export function LandingPage() {
             <Button
               variant="ghost"
               data-testid="button-login"
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => setLocation('/auth')}
             >
               Iniciar Sesión
             </Button>
             <Button
               data-testid="button-signup"
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => setLocation('/auth')}
             >
               Comenzar Gratis
             </Button>
@@ -46,7 +49,7 @@ export function LandingPage() {
             <Button
               size="lg"
               data-testid="button-get-started"
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => setLocation('/auth')}
             >
               Comenzar Ahora
             </Button>
@@ -137,7 +140,7 @@ export function LandingPage() {
           <Button
             size="lg"
             data-testid="button-cta-start"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => setLocation('/auth')}
           >
             Crear Cuenta Gratis
           </Button>
