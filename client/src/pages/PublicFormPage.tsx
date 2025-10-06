@@ -12,6 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface FormField {
+  id: string;
+  type: string;
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[];
+}
+
 export default function PublicFormPage() {
   const { id } = useParams();
   const { toast } = useToast();
@@ -135,7 +144,7 @@ export default function PublicFormPage() {
                   />
                 </div>
 
-                {form.fields.map((field) => (
+                {form.fields.map((field: FormField) => (
                 <div key={field.id} className="space-y-2">
                   <Label htmlFor={field.id}>
                     {field.label}
@@ -200,7 +209,7 @@ export default function PublicFormPage() {
                         <SelectValue placeholder="Selecciona una opción" />
                       </SelectTrigger>
                       <SelectContent>
-                        {field.options.map((option, idx) => (
+                        {field.options.map((option: string, idx: number) => (
                           <SelectItem key={idx} value={option}>
                             {option}
                           </SelectItem>
@@ -211,7 +220,7 @@ export default function PublicFormPage() {
 
                   {field.type === 'checkbox' && field.options && (
                     <div className="space-y-2">
-                      {field.options.map((option, idx) => (
+                      {field.options.map((option: string, idx: number) => (
                         <div key={idx} className="flex items-center space-x-2">
                           <Checkbox
                             id={`${field.id}-${idx}`}

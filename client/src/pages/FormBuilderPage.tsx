@@ -431,6 +431,22 @@ export default function FormBuilderPage() {
                   onSettings={() => console.log("Settings", field.id)}
                 />
               ))}
+              
+              {fields.length > 0 && (
+                <div className="pt-4">
+                  <Button 
+                    type="button" 
+                    className="w-full" 
+                    disabled
+                    data-testid="button-submit-preview"
+                  >
+                    Enviar respuesta
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Este botón aparecerá en el formulario publicado
+                  </p>
+                </div>
+              )}
             </div>
 
             {fields.length === 0 && (
