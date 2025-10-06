@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { FileText, BarChart3, LogOut, Plus, LayoutDashboard } from "lucide-react";
+import { FileText, LogOut, Plus, LayoutDashboard, Users, Settings } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,8 +22,13 @@ const menuItems = [
   { title: "Formularios", url: "/forms", icon: FileText },
 ];
 
+const adminMenuItems = [
+  { title: "Usuarios", url: "/users", icon: Users },
+  { title: "Configuración", url: "/settings", icon: Settings },
+];
+
 interface AppSidebarProps {
-  userRole?: "admin" | "gestor" | "visualizador";
+  userRole?: "admin" | "gestor" | "visualizador" | "cliente";
 }
 
 export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
@@ -81,6 +86,26 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user?.role === "admin" && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administración</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <Link href={item.url} data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-sidebar-border">

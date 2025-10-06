@@ -14,6 +14,8 @@ import DashboardPage from "@/pages/DashboardPage";
 import FormBuilderPage from "@/pages/FormBuilderPage";
 import FormResponsesPage from "@/pages/FormResponsesPage";
 import PublicFormPage from "@/pages/PublicFormPage";
+import UsersPage from "@/pages/UsersPage";
+import SettingsPage from "@/pages/SettingsPage";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
@@ -53,6 +55,8 @@ function AuthenticatedApp() {
               <Route path="/builder" component={FormBuilderPage} />
               <Route path="/builder/:id" component={FormBuilderPage} />
               <Route path="/responses/:id" component={FormResponsesPage} />
+              <Route path="/users" component={UsersPage} />
+              <Route path="/settings" component={SettingsPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
@@ -75,6 +79,8 @@ function Router() {
       <ProtectedRoute path="/builder" component={AuthenticatedApp} />
       <ProtectedRoute path="/builder/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/responses/:id" component={AuthenticatedApp} />
+      <ProtectedRoute path="/users" component={AuthenticatedApp} />
+      <ProtectedRoute path="/settings" component={AuthenticatedApp} />
       
       {/* Fallback */}
       <Route component={NotFound} />

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Shield, Eye, PenTool } from "lucide-react";
+import { Shield, Eye, PenTool, User } from "lucide-react";
 
-type UserRole = "admin" | "gestor" | "visualizador";
+type UserRole = "admin" | "gestor" | "visualizador" | "cliente";
 
 interface RoleBadgeProps {
   role: UserRole;
@@ -22,6 +22,11 @@ const roleConfig = {
     label: "Visualizador",
     className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
     icon: Eye,
+  },
+  cliente: {
+    label: "Cliente",
+    className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+    icon: User,
   },
 };
 
