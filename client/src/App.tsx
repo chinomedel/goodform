@@ -34,7 +34,7 @@ function AuthenticatedApp() {
   }
 
   if (!user) {
-    return null; // Let ProtectedRoute handle redirect
+    return <div data-testid="loading-redirect"></div>;
   }
 
   const style = {

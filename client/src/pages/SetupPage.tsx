@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -34,7 +34,7 @@ const setupSchema = z.object({
 type SetupFormData = z.infer<typeof setupSchema>;
 
 export default function SetupPage() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showLicense, setShowLicense] = useState(false);
 
@@ -52,24 +52,21 @@ export default function SetupPage() {
 
   const setupMutation = useMutation({
     mutationFn: async (data: SetupFormData) => {
-      const response = await apiRequest("/api/setup", {
-        method: "POST",
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          licenseKey: data.licenseKey,
-        }),
+      const response = await apiRequest("POST", "/api/setup", {
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        licenseKey: data.licenseKey,
       });
-      return response;
+      return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Setup completado",
         description: "Ahora puedes iniciar sesión con tus credenciales",
       });
-      navigate("/auth");
+      setLocation("/auth");
     },
     onError: (error: any) => {
       toast({
