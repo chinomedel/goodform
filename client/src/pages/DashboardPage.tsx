@@ -1,158 +1,158 @@
-import { StatsCard } from "@/components/StatsCard";
-import { Card } from "@/components/ui/card";
-import { FileText, Users, BarChart3, CheckCircle } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { getDashboardStats, getForms } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, CheckCircle, Clock, BarChart } from "lucide-react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function DashboardPage() {
-  const responseData = [
-    { name: "Lun", respuestas: 45 },
-    { name: "Mar", respuestas: 52 },
-    { name: "Mie", respuestas: 38 },
-    { name: "Jue", respuestas: 65 },
-    { name: "Vie", respuestas: 72 },
-    { name: "Sab", respuestas: 28 },
-    { name: "Dom", respuestas: 15 },
-  ];
+  const { data: stats, isLoading: isLoadingStats } = useQuery({
+    queryKey: ['/api/dashboard/stats'],
+    queryFn: getDashboardStats,
+  });
 
-  const formDistribution = [
-    { name: "Publicados", value: 18 },
-    { name: "Borradores", value: 6 },
-  ];
+  const { data: forms, isLoading: isLoadingForms } = useQuery({
+    queryKey: ['/api/forms'],
+    queryFn: getForms,
+  });
 
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))"];
+  const recentForms = forms?.slice(0, 5) || [];
 
   return (
-    <div className="p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-semibold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Análisis y estadísticas de tus formularios
-          </p>
-        </div>
+    <div className="container mx-auto py-8 space-y-8">
+      <div>
+        <h1 className="text-4xl font-bold" data-testid="text-page-title">Dashboard</h1>
+        <p className="text-muted-foreground mt-2">Resumen de tu actividad</p>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatsCard
-            title="Formularios"
-            value={24}
-            icon={FileText}
-            trend={{ value: 12, label: "vs mes anterior" }}
-          />
-          <StatsCard
-            title="Respuestas Totales"
-            value="1,234"
-            icon={BarChart3}
-            trend={{ value: 8, label: "esta semana" }}
-          />
-          <StatsCard
-            title="Usuarios Activos"
-            value={56}
-            icon={Users}
-            trend={{ value: -3, label: "vs semana pasada" }}
-          />
-          <StatsCard
-            title="Tasa de Completado"
-            value="87%"
-            icon={CheckCircle}
-            trend={{ value: 5, label: "vs mes anterior" }}
-          />
-        </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Formularios</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-total-forms">
+              {isLoadingStats ? '-' : stats?.totalForms || 0}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Respuestas por Día</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={responseData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="respuestas"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Formularios Publicados</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-published-forms">
+              {isLoadingStats ? '-' : stats?.publishedForms || 0}
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Distribución de Formularios</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={formDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {formDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Borradores</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-draft-forms">
+              {isLoadingStats ? '-' : stats?.draftForms || 0}
+            </div>
+          </CardContent>
+        </Card>
 
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">Formularios Más Populares</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={[
-                { name: "Satisfacción", respuestas: 142 },
-                { name: "Feedback", respuestas: 87 },
-                { name: "Registro", respuestas: 65 },
-                { name: "Vacaciones", respuestas: 45 },
-                { name: "Contacto", respuestas: 32 },
-              ]}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
-              <YAxis stroke="hsl(var(--muted-foreground))" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(var(--popover))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "6px",
-                }}
-              />
-              <Bar dataKey="respuestas" fill="hsl(var(--primary))" />
-            </BarChart>
-          </ResponsiveContainer>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Respuestas</CardTitle>
+            <BarChart className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="text-total-responses">
+              {isLoadingStats ? '-' : stats?.totalResponses || 0}
+            </div>
+          </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-1">
+          <div>
+            <CardTitle>Formularios Recientes</CardTitle>
+          </div>
+          <Link href="/forms">
+            <Button variant="outline" size="sm" data-testid="button-view-all">
+              Ver todos
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {isLoadingForms ? (
+            <p className="text-center text-muted-foreground py-8">Cargando...</p>
+          ) : recentForms.length === 0 ? (
+            <div className="text-center py-12 space-y-4">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
+              <div>
+                <h3 className="text-lg font-semibold">No hay formularios</h3>
+                <p className="text-muted-foreground">Crea tu primer formulario para comenzar</p>
+              </div>
+              <Link href="/builder">
+                <Button data-testid="button-create-first">Crear formulario</Button>
+              </Link>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Respuestas</TableHead>
+                  <TableHead>Última actualización</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentForms.map((form) => (
+                  <TableRow key={form.id} data-testid={`row-form-${form.id}`}>
+                    <TableCell className="font-medium">{form.title}</TableCell>
+                    <TableCell>
+                      <Badge variant={form.status === 'published' ? 'default' : 'secondary'}>
+                        {form.status === 'published' ? 'Publicado' : 'Borrador'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{form.responseCount || 0}</TableCell>
+                    <TableCell>
+                      {form.updatedAt
+                        ? format(new Date(form.updatedAt), "dd/MM/yyyy", { locale: es })
+                        : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/builder/${form.id}`}>
+                          <Button variant="ghost" size="sm" data-testid={`button-edit-${form.id}`}>
+                            Editar
+                          </Button>
+                        </Link>
+                        {form.status === 'published' && (
+                          <Link href={`/responses/${form.id}`}>
+                            <Button variant="ghost" size="sm" data-testid={`button-responses-${form.id}`}>
+                              Ver respuestas
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

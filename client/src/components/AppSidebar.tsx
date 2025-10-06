@@ -10,17 +10,17 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { FileText, BarChart3, Users, Settings, LogOut, Plus } from "lucide-react";
-import { Link } from "wouter";
+import { FileText, BarChart3, LogOut, Plus, LayoutDashboard } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RoleBadge } from "./RoleBadge";
+import { useQuery } from "@tanstack/react-query";
+import { getCurrentUser } from "@/lib/api";
 
 const menuItems = [
-  { title: "Mis Formularios", url: "/", icon: FileText },
-  { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-  { title: "Usuarios", url: "/users", icon: Users },
-  { title: "Configuración", url: "/settings", icon: Settings },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Formularios", url: "/forms", icon: FileText },
 ];
 
 interface AppSidebarProps {
@@ -28,6 +28,23 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
+  const [location] = useLocation();
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: getCurrentUser,
+  });
+
+  const getUserInitials = () => {
+    if (!user) return 'U';
+    const firstName = user.firstName?.[0] || '';
+    const lastName = user.lastName?.[0] || '';
+    return `${firstName}${lastName}`.toUpperCase() || 'U';
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return 'Usuario';
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Usuario';
+  };
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
@@ -42,10 +59,12 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
       <SidebarContent>
         <SidebarGroup>
           <div className="px-3 py-2">
-            <Button className="w-full" data-testid="button-new-form">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Formulario
-            </Button>
+            <Link href="/builder">
+              <Button className="w-full" data-testid="button-new-form">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Formulario
+              </Button>
+            </Link>
           </div>
         </SidebarGroup>
 
@@ -55,7 +74,7 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
@@ -71,17 +90,23 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarImage src={user?.profileImageUrl || ''} />
+            <AvatarFallback>{getUserInitials()}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Juan Pérez</p>
+            <p className="text-sm font-medium truncate">{getUserDisplayName()}</p>
             <div className="mt-1">
-              <RoleBadge role={userRole} />
+              <RoleBadge role={user?.role || userRole} />
             </div>
           </div>
         </div>
-        <Button variant="outline" className="w-full" size="sm" data-testid="button-logout">
+        <Button
+          variant="outline"
+          className="w-full"
+          size="sm"
+          data-testid="button-logout"
+          onClick={() => window.location.href = '/api/logout'}
+        >
           <LogOut className="h-4 w-4 mr-2" />
           Cerrar Sesión
         </Button>

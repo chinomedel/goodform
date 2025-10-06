@@ -16,10 +16,17 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="ghost" data-testid="button-login">
+            <Button
+              variant="ghost"
+              data-testid="button-login"
+              onClick={() => window.location.href = '/api/login'}
+            >
               Iniciar Sesión
             </Button>
-            <Button data-testid="button-signup">
+            <Button
+              data-testid="button-signup"
+              onClick={() => window.location.href = '/api/login'}
+            >
               Comenzar Gratis
             </Button>
           </div>
@@ -36,7 +43,11 @@ export function LandingPage() {
             y exporta datos a Excel. Todo en una plataforma intuitiva.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" data-testid="button-get-started">
+            <Button
+              size="lg"
+              data-testid="button-get-started"
+              onClick={() => window.location.href = '/api/login'}
+            >
               Comenzar Ahora
             </Button>
             <Button variant="outline" size="lg" data-testid="button-learn-more">
@@ -123,7 +134,11 @@ export function LandingPage() {
           <p className="text-xl text-muted-foreground mb-8">
             Únete a miles de equipos que ya utilizan GoodForm
           </p>
-          <Button size="lg" data-testid="button-cta-start">
+          <Button
+            size="lg"
+            data-testid="button-cta-start"
+            onClick={() => window.location.href = '/api/login'}
+          >
             Crear Cuenta Gratis
           </Button>
         </div>

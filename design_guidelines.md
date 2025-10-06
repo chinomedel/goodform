@@ -1,179 +1,182 @@
 # GoodForm Design Guidelines
 
-## Design Approach: Design System Foundation
-**Selected System**: Material Design 3 principles with Linear-inspired refinement  
-**Justification**: GoodForm is a utility-focused, data-intensive productivity tool requiring clear hierarchy, efficient workflows, and professional aesthetics. The combination provides modern polish while maintaining functional clarity.
-
-**Key Principles**:
-- Clarity over decoration: Every element serves a purpose
-- Efficiency first: Minimize clicks and cognitive load
-- Professional polish: Enterprise-ready aesthetics
-- Scalable complexity: Handles simple to complex forms gracefully
+## Design System
+**Foundation**: Material Design 3 + Linear aesthetics for enterprise productivity  
+**Principles**: Precision over decoration | Workflow velocity | Enterprise credibility | Intelligent density
 
 ---
 
-## Core Design Elements
+## Color Palette
 
-### A. Color Palette
+### Light Mode
+```
+Primary: hsl(240 65% 55%) | Hover: hsl(240 65% 48%)
+Surface Base: hsl(0 0% 98%) | Elevated: hsl(0 0% 100%) | Overlay: hsl(220 15% 96%)
+Text Primary: hsl(220 15% 18%) | Secondary: hsl(220 10% 42%) | Tertiary: hsl(220 8% 58%)
+Border Default: hsl(220 15% 88%) | Subtle: hsl(220 10% 93%)
+Success: hsl(142 52% 42%) | Warning: hsl(38 92% 58%) | Error: hsl(0 72% 52%) | Info: hsl(210 60% 55%)
+```
 
-**Light Mode**:
-- Primary: 240 60% 50% (Professional blue - CTAs, active states)
-- Surface: 0 0% 98% (Page backgrounds)
-- Surface Elevated: 0 0% 100% (Cards, panels)
-- Text Primary: 220 15% 20%
-- Text Secondary: 220 10% 45%
-- Border: 220 15% 90%
-- Success: 140 50% 45% (Published forms, positive actions)
-- Warning: 40 95% 55% (Preview mode, pending states)
-- Destructive: 0 70% 50% (Delete actions)
+### Dark Mode
+```
+Primary: hsl(240 60% 62%) | Hover: hsl(240 60% 70%)
+Surface Base: hsl(220 15% 9%) | Elevated: hsl(220 15% 13%) | Overlay: hsl(220 15% 16%)
+Text Primary: hsl(0 0% 96%) | Secondary: hsl(220 10% 68%) | Tertiary: hsl(220 8% 48%)
+Border Default: hsl(220 15% 24%) | Subtle: hsl(220 12% 18%)
+```
 
-**Dark Mode**:
-- Primary: 240 60% 60%
-- Surface: 220 15% 10%
-- Surface Elevated: 220 15% 14%
-- Text Primary: 0 0% 95%
-- Text Secondary: 220 10% 65%
-- Border: 220 15% 25%
+### Semantic Colors
+**Role Badges**: Admin (Purple hsl(270 60% 55%)) | Gestor (Blue - primary) | Visualizador (Gray hsl(220 10% 45%))
 
-### B. Typography
+---
 
-**Font Families** (Google Fonts):
-- Primary: 'Inter' (UI elements, body text) - weights 400, 500, 600
-- Display: 'Cal Sans' or 'Inter' (headings) - weights 600, 700
+## Typography
+**Fonts**: Inter (Google Fonts) - weights 400, 500, 600, 700
 
-**Scale**:
-- Display (H1): text-4xl (36px) font-semibold
-- Heading (H2): text-2xl (24px) font-semibold  
-- Subheading (H3): text-xl (20px) font-medium
-- Body: text-base (16px) font-normal
-- Small: text-sm (14px) font-normal
-- Micro: text-xs (12px) font-medium (labels, metadata)
+```
+Display Large: text-5xl font-bold leading-tight tracking-tight
+Display: text-4xl font-semibold leading-tight
+Headline: text-2xl font-semibold leading-snug
+Title: text-xl font-semibold leading-normal
+Body Large: text-base font-normal leading-relaxed
+Body: text-sm font-normal leading-normal
+Label: text-xs font-medium leading-tight tracking-wide uppercase
+Caption: text-xs font-normal leading-tight
+```
 
-### C. Layout System
+---
 
-**Spacing Primitives**: Tailwind units of 2, 4, 8, 12, 16, 24
-- Micro spacing (gaps, padding): 2, 4
-- Component internal: 4, 8
-- Section spacing: 12, 16
-- Page margins: 16, 24
+## Layout System
 
-**Grid Structure**:
-- Container: max-w-7xl mx-auto px-8
-- Form builder: 3-column layout (tools sidebar 280px | canvas flex-1 | properties 320px)
-- Dashboard: 2-column responsive (sidebar 240px | main flex-1)
-- Data tables: Full width with horizontal scroll on mobile
+**Spacing Scale**: 2, 4, 6, 8, 12, 16, 20, 24, 32 (Tailwind units)
+- Micro (2,4): icon spacing | Component (6,8,12): padding/gaps | Section (16,20,24): dividers | Layout (32): page-level
 
-### D. Component Library
+**Grid Architecture**:
+```
+Global: max-w-[1920px] mx-auto
+Content: max-w-7xl mx-auto px-8
+Form Builder: Palette 280px | Canvas flex-1 min-w-0 | Properties 360px
+Dashboard: Sidebar 256px | Main flex-1 max-w-[1400px]
+Breakpoints: Mobile-first, collapse sidebars <1024px
+```
 
-**Navigation**:
-- Top header: 64px fixed, contains logo, global search, user menu, theme toggle
-- Sidebar navigation: 240px collapsible with icon + label items
-- Breadcrumbs: text-sm with chevron separators for deep navigation
+**Baseline Grid**: 8px vertical rhythm, max 3 hierarchy levels per view
 
-**Form Builder Components**:
-- Canvas: Bordered container with drop zones, draggable field items
-- Field palette: Categorized grid of draggable field types with icons
-- Properties panel: Tabbed interface (Settings | Validation | Logic)
-- Preview toggle: Prominent button to switch between edit/preview modes
+---
 
-**Data Display**:
-- Cards: Elevated surface with subtle shadow, 16px padding
-- Tables: Striped rows (hover state), sticky headers, inline actions
-- Dashboard charts: Card-based with Chart.js or Recharts integration
-- Stats cards: Large number (text-3xl) with label and trend indicator
+## Core Components
 
-**Forms & Inputs**:
-- All inputs: rounded-md border, focus:ring-2 ring-primary/20
-- Text fields: h-10 px-3 with floating labels
-- Select dropdowns: Custom styled with chevron icon
-- Checkboxes/Radio: Custom styled with primary color
-- File upload: Drag-and-drop zone with progress indicator
+### Navigation
+**Header** (h-16, fixed, z-50): Logo + name (left) | Search bar cmd+k (center, max-w-md) | Notifications/theme/avatar (right) | Bottom border + subtle shadow
+
+**Sidebar** (w-64, sticky): Collapsible to w-20 | Sections: Dashboard/Forms/Responses/Analytics/Settings | Active: Primary bg 10% opacity + left border | Icons: Heroicons outline 24px
+
+**Breadcrumbs**: text-sm, chevron separators (›), last crumb bold, py-4 below header
+
+### Form Builder
+**Palette**: Categorized accordions, draggable cards with icon + name, hover scale-102, visual drag handle (⋮⋮)
+
+**Canvas**: max-w-3xl centered, drop zones (border-dashed border-2), active zone (primary border + bg tint), fields as elevated cards with inline controls
+
+**Properties Panel**: Tabs (Settings|Validation|Logic|Design) with pill style, floating labels, real-time preview
+
+**Action Bar** (sticky top-16): Editable title (left, h2) | Save draft/Preview/Publish (right, primary prominent) | Auto-save timestamp
+
+### Inputs & Controls
+**Text Inputs**: h-11 px-4 rounded-lg border | Focus: ring-2 ring-primary/20 border-primary | Floating labels | Helper text-xs text-secondary below | Error: border-error + icon
+
+**Selects**: Match input styling, custom chevron, dropdown (elevated surface, rounded-lg, shadow-lg), hover:bg-surface-overlay, selected:bg-primary/10
+
+**Checkboxes/Radio** (20x20px): rounded-md/rounded-full, checked (primary bg + white mark), focus ring-2 ring-primary/20
+
+**File Upload**: Drag zone min-h-48 border-dashed border-2, hover (border-primary + bg tint), progress bar, file list with remove buttons
 
 **Buttons**:
-- Primary: bg-primary text-white rounded-md px-4 h-10 font-medium
-- Secondary: border border-border bg-surface-elevated
-- Ghost: text-primary hover:bg-primary/5
-- Icon buttons: w-10 h-10 rounded-md hover:bg-surface-elevated
+```
+Primary: bg-primary text-white h-11 px-6 rounded-lg font-medium hover:bg-primary-hover
+Secondary: bg-surface-elevated border hover:bg-surface-overlay
+Ghost: text-primary hover:bg-primary/5
+Icon: w-11 h-11 rounded-lg
+Loading: Spinner replaces content
+```
 
-**Modals & Overlays**:
-- Modals: Centered, max-w-2xl, rounded-lg with backdrop blur
-- Drawers: Slide from right, w-96 for quick actions
-- Toasts: Top-right, 4-second duration, with icon
+### Data Display
+**Cards**: surface-elevated bg, 1px border-subtle, rounded-xl, p-6 (standard)/p-4 (compact), shadow-sm hover:shadow-md
 
-**Role Indicators**:
-- Badge components for roles (Admin/Gestor/Visualizador)
-- Color-coded: Admin (purple), Gestor (blue), Visualizador (gray)
-- Permission icons: Lock (private), Globe (public), Users (shared)
+**Status Badges** (rounded-full px-3 py-1 text-xs font-medium): Draft (gray) | Published (success + white text) | Archived (tertiary on subtle bg)
 
-### E. Page-Specific Layouts
+**Stats Cards**: p-6 rounded-lg border, metric (text-4xl font-bold), label (text-sm text-secondary), trend arrow + %
 
-**Login/Auth Pages**:
-- Split screen: Left (480px) with brand, right (flex-1) with form
-- Form container: max-w-sm centered with 48px vertical spacing
-- Social login buttons: Full width, icon + text
+**Tables**: Sticky header with sort indicators, hover row bg change, bulk selection with floating action bar, quick action icons
 
-**Dashboard**:
-- Grid of stat cards (4 columns on desktop, 2 on tablet, 1 on mobile)
-- Recent forms table with inline actions (Edit, Preview, Share, Delete)
-- Chart section: 2-column layout (responses over time + field analytics)
+### Overlays
+**Modal**: Backdrop (bg-black/40 backdrop-blur-sm), panel (max-w-2xl bg-surface-elevated rounded-2xl p-8), header text-2xl mb-6, footer (flex justify-end gap-3 pt-6 border-t)
 
-**Form Builder**:
-- Full height layout minus header
-- Sticky toolbars for save/publish/preview actions
-- Real-time validation feedback in properties panel
-- Drag handles with visual feedback during drag operations
+**Slide-over**: w-96/w-[600px], full height, slide from right, close button top-right
 
-**Form List View**:
-- Filterable/searchable header with view toggles (grid/list)
-- Grid: 3-column cards with thumbnail preview
-- List: Table with columns (Name, Status, Responses, Modified, Actions)
-- Bulk actions toolbar when items selected
-
-**Public Form View**:
-- Clean, centered layout (max-w-2xl)
-- Progress indicator for multi-page forms
-- Branded header with form title and description
-- Submit button: Large, prominent, primary color
-
-### F. Animations
-
-Use sparingly:
-- Page transitions: None (instant for performance)
-- Micro-interactions: Hover scale on cards (scale-[1.02]), button press feedback
-- Loading states: Spinner for async operations, skeleton screens for data fetching
-- Drag-and-drop: Opacity 0.5 while dragging, smooth drop animations
+**Toast** (top-right stack): max-w-sm, auto-dismiss 4s/6s, icon + message + dismiss, border-left accent (success/error)
 
 ---
 
-## Images
+## Page Layouts
 
-**Dashboard Welcome Section** (Optional if empty state):
-- Illustration of form creation workflow (abstract, colorful, 400x300px)
-- Placement: Center of empty dashboard before first form is created
+**Login**: Split (left 480px gradient brand panel with logo/tagline | right flex-1 centered form max-w-sm)
 
-**Marketing/About Page** (If included):
-- Hero: Team collaboration illustration, full-width, 60vh height
-- Features: 3 icons representing Create/Share/Analyze (inline SVG or icon library)
+**Dashboard**: Stats grid (4 cards) | Recent forms table with search/filter | Optional activity sidebar | Empty: centered illustration 400x300 + CTA
 
-**No large hero images** needed for app interface - focus on functional clarity over visual storytelling.
+**Form Builder**: Full viewport, 3-column resizable, sticky action bar, autosave indicator, exit confirmation if unsaved
+
+**Form List**: Header (title/search/filters/view toggle/Create button) | Grid (3-col cards) or List (data table) | Pagination footer
+
+**Public Form**: max-w-2xl centered, branded header, progress indicator, fields gap-8, submit button h-14 (full-width mobile), success screen with animation
+
+**Analytics**: Date selector + export header | Summary cards | Tabs (Overview|Responses|Field Analytics|Export) | Charts + data table
 
 ---
 
-## Accessibility & UX Standards
+## Animations
+**Micro-interactions only** (no page transitions):
+```
+Card hover: scale-[1.01] duration-150
+Button press: scale-[0.98] active
+Drag: opacity-50 dragging, 200ms ease drop
+Modal: Fade backdrop + scale 95%→100%
+Toast: Slide from right + fade
+Loading: CSS spinner for async ops
+```
 
-- All form inputs: Visible labels, WCAG AA contrast ratios
-- Interactive elements: Minimum 44x44px touch targets
-- Keyboard navigation: Tab order follows visual hierarchy, focus indicators always visible
-- Screen reader: Proper ARIA labels for complex interactions (drag-and-drop, modals)
-- Error messages: Inline validation with clear recovery instructions
-- Dark mode: Full support with consistent implementation including all inputs
+---
+
+## Illustrations
+**Dashboard Empty**: 3D forms/docs floating (400x300), gradient primary palette, centered  
+**Builder Empty Canvas**: Drag gesture line art (320x240), primary accent, centered SVG  
+**Error Pages**: Abstract broken connection (600x400), monochrome + primary accent  
+**No hero images** - utility-focused app
+
+---
+
+## Accessibility & Standards
+
+**WCAG**: AAA body text, AA interactive elements | Touch targets 44x44px min | Keyboard nav with visible focus rings (ring-2 ring-primary/50)  
+**Screen readers**: Semantic HTML, ARIA labels, live regions for updates  
+**Forms**: Inline errors with icons, clear recovery, preserve input  
+**Responsive**: Mobile-first, sidebars→bottom sheets <1024px  
+**Dark mode**: Complete implementation all components
 
 ---
 
 ## Consistency Rules
 
-- Use icons from Heroicons (outline for navigation, solid for buttons)
-- Maintain 8px baseline grid for vertical rhythm
-- Never exceed 3 levels of visual hierarchy on a single screen
-- Keep action buttons (Save, Publish, Delete) in consistent locations across views
-- Form submission always shows success toast + redirects to form list
+✓ **Heroicons only** (outline for nav/large, solid for buttons/small)  
+✓ **8px baseline grid** for vertical rhythm  
+✓ **Rounded-lg** for all form components (never mix radii in same group)  
+✓ **Action positions**: Save (left/center), Cancel (left), Destructive (right + confirmation)  
+✓ **Status changes** always show toast notification  
+✓ **Destructive actions** require confirmation modal with explicit labels  
+✓ **Form submissions** show success toast + redirect/inline confirmation  
+
+**Icons/Assets**: Shield (Admin), User (Gestor), Eye (Visualizador) for role badges
+
+---
+
+**Token count target: <2000** | All critical design rules, code examples, accessibility standards, and visual specifications preserved for immediate developer implementation.
