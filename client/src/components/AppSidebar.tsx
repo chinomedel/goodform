@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RoleBadge } from "./RoleBadge";
 import { useAuth } from "@/hooks/use-auth";
+import { useQuery } from "@tanstack/react-query";
+import { AppConfig } from "@shared/schema";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -34,6 +36,13 @@ interface AppSidebarProps {
 export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
+  
+  const { data: config } = useQuery<AppConfig>({
+    queryKey: ["/api/config"],
+  });
+
+  const appName = config?.appName || "GoodForm";
+  const logoUrl = config?.logoUrl;
 
   const getUserInitials = () => {
     if (!user) return 'U';
@@ -46,14 +55,32 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
     if (!user) return 'Usuario';
     return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Usuario';
   };
+
+  const getAppInitials = () => {
+    const words = appName.split(' ');
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return appName.substring(0, 2).toUpperCase();
+  };
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
-          <div className="bg-primary text-primary-foreground w-8 h-8 rounded-md flex items-center justify-center font-semibold">
-            GF
-          </div>
-          <span className="font-semibold text-lg">GoodForm</span>
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={`${appName} logo`}
+              className="w-8 h-8 object-contain"
+              data-testid="img-sidebar-logo"
+            />
+          ) : (
+            <div className="bg-primary text-primary-foreground w-8 h-8 rounded-md flex items-center justify-center font-semibold text-xs">
+              {getAppInitials()}
+            </div>
+          )}
+          <span className="font-semibold text-lg" data-testid="text-app-name">{appName}</span>
         </div>
       </SidebarHeader>
 
