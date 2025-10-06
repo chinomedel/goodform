@@ -59,7 +59,8 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 
 ### Base de Datos
 Esquema completo en `shared/schema.ts`:
-- `users` - Usuarios con roles deployment-specific
+- `roles` - Tabla de roles del sistema (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas)
+- `users` - Usuarios con `roleId` (foreign key a roles table) y campo `isSuperAdmin`
 - `forms` - Formularios con configuración y modo constructor
   - `builderMode` - 'visual' | 'code' (default: 'visual')
   - `customHtml` - HTML personalizado (modo código)
@@ -75,8 +76,9 @@ Esquema completo en `shared/schema.ts`:
 
 **Inicialización Automática:**
 - Las tablas se crean automáticamente en el primer inicio
-- Script `server/init-db.ts` detecta si la BD está vacía
+- Script `server/init-db.ts` detecta si la BD está vacía y puebla tabla `roles`
 - No requiere ejecutar migraciones manualmente
+- **Sistema de roles**: Usa tabla dedicada `roles` con relación foreign key desde `users.roleId`
 
 ## Flujo de Autenticación
 

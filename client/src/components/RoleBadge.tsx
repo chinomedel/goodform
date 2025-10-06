@@ -1,13 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Shield, Eye, PenTool, User, Crown } from "lucide-react";
 
-type UserRole = "admin_auto_host" | "super_admin" | "visualizador_auto_host" | "cliente_saas";
-
 interface RoleBadgeProps {
-  role: UserRole;
+  role: string;
 }
 
-const roleConfig = {
+const roleConfig: Record<string, { label: string; className: string; icon: any }> = {
   admin_auto_host: {
     label: "Admin Auto-Host",
     className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
@@ -31,7 +29,11 @@ const roleConfig = {
 };
 
 export function RoleBadge({ role }: RoleBadgeProps) {
-  const config = roleConfig[role];
+  const config = roleConfig[role] || {
+    label: role,
+    className: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    icon: User,
+  };
   const Icon = config.icon;
 
   return (
