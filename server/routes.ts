@@ -717,6 +717,66 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // License management (Super Admin only - SaaS mode)
+  app.post('/api/admin/licenses/issue', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      if (!isSaasMode()) {
+        return res.status(403).json({ message: "Solo disponible en modo SaaS" });
+      }
+
+      const { issuedToEmail, expiresAt, deploymentInfo } = req.body;
+
+      if (!issuedToEmail || !expiresAt) {
+        return res.status(400).json({ message: "Email y fecha de expiración son requeridos" });
+      }
+
+      const licenseKey = `GF-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+      const license = await storage.createLicense({
+        licenseKey,
+        issuedToEmail,
+        issuedBy: req.user.email,
+        expiresAt: new Date(expiresAt),
+        status: 'active',
+        deploymentInfo: deploymentInfo || null,
+      });
+
+      res.status(201).json(license);
+    } catch (error) {
+      console.error("Error issuing license:", error);
+      res.status(500).json({ message: "Error al emitir licencia" });
+    }
+  });
+
+  app.get('/api/admin/licenses', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      if (!isSaasMode()) {
+        return res.status(403).json({ message: "Solo disponible en modo SaaS" });
+      }
+
+      const licenses = await storage.getAllLicenses();
+      res.json(licenses);
+    } catch (error) {
+      console.error("Error fetching licenses:", error);
+      res.status(500).json({ message: "Error al obtener licencias" });
+    }
+  });
+
+  app.patch('/api/admin/licenses/:id/revoke', isAuthenticated, requireSuperAdmin, async (req: any, res) => {
+    try {
+      if (!isSaasMode()) {
+        return res.status(403).json({ message: "Solo disponible en modo SaaS" });
+      }
+
+      const { id } = req.params;
+      const license = await storage.updateLicenseStatus(id, 'revoked');
+      res.json(license);
+    } catch (error) {
+      console.error("Error revoking license:", error);
+      res.status(500).json({ message: "Error al revocar licencia" });
+    }
+  });
+
   // App configuration (Admin only)
   app.get('/api/config', isAuthenticated, requireRole('admin'), async (req: any, res) => {
     try {

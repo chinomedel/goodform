@@ -22,6 +22,18 @@ GoodForm es una plataforma web completa en español para gestión de formularios
 - Exportación a Excel
 - Sistema de roles de 4 niveles (Admin, Gestor, Visualizador, Cliente)
 - Páginas de administración (Usuarios y Configuración) exclusivas para admins
+- **Sistema Dual SaaS + Auto-Host:**
+  - Detección de modo deployment (DEPLOYMENT_MODE)
+  - Wizard de setup inicial para Auto-Host
+  - Bloqueo de registro público en Auto-Host
+  - Sistema de licencias con validación online
+  - Límite de 5 formularios sin licencia
+  - Endpoints de administración de licencias (super admin)
+
+🚧 **En Progreso:**
+- Dashboard de generación de códigos para super admin
+- Validación diaria automática con período de gracia
+- Pestaña de Licencia en Settings
 
 ## Arquitectura
 
@@ -191,14 +203,93 @@ Esto inicia:
 - Frontend Vite con HMR
 - Servidor único en puerto 5000
 
+## Sistema Dual: SaaS + Auto-Host
+
+### Modos de Deployment
+
+#### Modo SaaS (por defecto)
+- `DEPLOYMENT_MODE=saas` o sin variable
+- nmedelb@gmail.com es el super administrador (isSuperAdmin=true)
+- Registro público habilitado
+- Todas las funcionalidades disponibles sin límites
+- Puede generar licencias para instalaciones Auto-Host
+
+#### Modo Auto-Host
+- `DEPLOYMENT_MODE=self-hosted`
+- Primera ejecución: redirige a `/setup` para crear admin inicial
+- Registro público bloqueado - solo el admin crea usuarios
+- Límite de 5 formularios sin licencia válida
+- Requiere código de licencia para uso ilimitado
+
+### Sistema de Licencias
+
+#### Estructura de Licencia
+- `licenseKey`: Código único (GF-XXXXX-XXXXX)
+- `issuedToEmail`: Email del cliente
+- `expiresAt`: Fecha de expiración
+- `status`: active | revoked | expired
+
+#### Validación (Modo Auto-Host)
+1. **Validación Online**: Auto-Host consulta a SaaS diariamente
+   - Endpoint: `POST /api/license/validate`
+   - Valida existencia, estado y expiración
+2. **Período de Gracia**: 3 días sin conexión
+   - Si no puede validar, usa última validación exitosa
+   - Si > 3 días, marca licencia como inválida
+3. **Límite de Formularios**: Sin licencia válida = máx 5 formularios
+
+### Endpoints del Sistema
+
+#### Setup (Auto-Host)
+- `POST /api/setup` - Crear admin inicial y completar setup
+- `GET /api/setup/status` - Verificar si setup está completo
+
+#### Licencias (Auto-Host)
+- `GET /api/license/status` - Estado actual de licencia
+- `POST /api/license/activate` - Activar código de licencia
+
+#### Administración de Licencias (Super Admin - SaaS)
+- `POST /api/admin/licenses/issue` - Generar nueva licencia
+- `GET /api/admin/licenses` - Listar todas las licencias
+- `PATCH /api/admin/licenses/:id/revoke` - Revocar licencia
+
+#### Validación (SaaS)
+- `POST /api/license/validate` - Validar licencia (usado por Auto-Host)
+
+### Flujos Principales
+
+#### Instalación Auto-Host
+1. Usuario descarga e instala aplicación
+2. Configura `DEPLOYMENT_MODE=self-hosted`
+3. Primera visita → redirige a `/setup`
+4. Completa wizard: email, password, (opcional) código de licencia
+5. Crea deployment y admin inicial
+6. Redirige a `/auth` para login
+
+#### Generación de Licencia (Super Admin)
+1. nmedelb@gmail.com accede a dashboard de licencias
+2. Completa formulario: email cliente, fecha expiración, notas
+3. Sistema genera código único (GF-XXXXX-XXXXX)
+4. Guarda en DB con estado "active"
+5. Super admin copia código y envía al cliente
+
+#### Activación de Licencia (Cliente Auto-Host)
+1. Admin ingresa a `/settings` > Licencia
+2. Ingresa código recibido
+3. Sistema valida contra SaaS
+4. Si válida: actualiza deployment con licencia
+5. Desbloquea funcionalidades
+
 ## Próximos Pasos Posibles
 
-1. **Sistema de Notificaciones**: Emails cuando se reciben respuestas
-2. **Templates de Formularios**: Plantillas pre-diseñadas
-3. **Lógica Condicional**: Campos que aparecen según respuestas anteriores
-4. **Análisis Avanzado**: Gráficos más complejos y filtros
-5. **Webhooks**: Integración con servicios externos
-6. **Multi-idioma**: Soporte para otros idiomas además de español
+1. **Dashboard de Licencias**: UI completa para super admin
+2. **Validación Automática**: Job diario para verificar licencias
+3. **Sistema de Notificaciones**: Emails cuando se reciben respuestas
+4. **Templates de Formularios**: Plantillas pre-diseñadas
+5. **Lógica Condicional**: Campos que aparecen según respuestas anteriores
+6. **Análisis Avanzado**: Gráficos más complejos y filtros
+7. **Webhooks**: Integración con servicios externos
+8. **Multi-idioma**: Soporte para otros idiomas además de español
 
 ## Notas de Desarrollo
 
