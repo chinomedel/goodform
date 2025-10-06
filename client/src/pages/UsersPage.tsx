@@ -52,17 +52,17 @@ export default function UsersPage() {
 
   const getRoleBadge = (role: string) => {
     const variants: Record<string, "default" | "secondary" | "outline"> = {
-      admin: "default",
-      gestor: "secondary",
-      visualizador: "outline",
-      cliente: "outline",
+      admin_auto_host: "default",
+      super_admin: "default",
+      visualizador_auto_host: "outline",
+      cliente_saas: "secondary",
     };
     
     const labels: Record<string, string> = {
-      admin: "Admin",
-      gestor: "Gestor",
-      visualizador: "Visualizador",
-      cliente: "Cliente",
+      admin_auto_host: "Admin Auto-Host",
+      super_admin: "Super Admin",
+      visualizador_auto_host: "Visualizador Auto-Host",
+      cliente_saas: "Cliente SaaS",
     };
 
     return (
@@ -137,10 +137,10 @@ export default function UsersPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="gestor">Gestor</SelectItem>
-                          <SelectItem value="visualizador">Visualizador</SelectItem>
-                          <SelectItem value="cliente">Cliente</SelectItem>
+                          <SelectItem value="admin_auto_host">Admin Auto-Host</SelectItem>
+                          <SelectItem value="visualizador_auto_host">Visualizador Auto-Host</SelectItem>
+                          <SelectItem value="super_admin">Super Admin</SelectItem>
+                          <SelectItem value="cliente_saas">Cliente SaaS</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>

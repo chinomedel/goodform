@@ -34,10 +34,10 @@ const superAdminMenuItems = [
 ];
 
 interface AppSidebarProps {
-  userRole?: "admin" | "gestor" | "visualizador" | "cliente";
+  userRole?: "admin_auto_host" | "super_admin" | "visualizador_auto_host" | "cliente_saas";
 }
 
-export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
+export function AppSidebar({ userRole = "cliente_saas" }: AppSidebarProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   
@@ -118,7 +118,7 @@ export function AppSidebar({ userRole = "gestor" }: AppSidebarProps) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {user?.role === "admin" && (
+        {(user?.role === "admin_auto_host" || user?.role === "super_admin") && (
           <SidebarGroup>
             <SidebarGroupLabel>Administración</SidebarGroupLabel>
             <SidebarGroupContent>
