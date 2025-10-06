@@ -1,5 +1,6 @@
 import {
   users,
+  roles,
   forms,
   formFields,
   formPermissions,
@@ -9,6 +10,8 @@ import {
   licenses,
   type User,
   type InsertUser,
+  type Role,
+  type InsertRole,
   type Form,
   type InsertForm,
   type FormField,
@@ -28,12 +31,18 @@ import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
+  // Role operations
+  getRole(id: string): Promise<Role | undefined>;
+  getAllRoles(): Promise<Role[]>;
+  createRole(role: InsertRole): Promise<Role>;
+  
   // User operations - required for local authentication
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserWithRole(id: string): Promise<(User & { role: Role }) | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
-  updateUserRole(userId: string, role: 'admin' | 'gestor' | 'visualizador' | 'cliente'): Promise<User>;
+  updateUserRole(userId: string, roleId: string): Promise<User>;
   
   // Form operations
   createForm(form: InsertForm): Promise<Form>;
@@ -93,6 +102,24 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Role operations
+  async getRole(id: string): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role;
+  }
+
+  async getAllRoles(): Promise<Role[]> {
+    return await db.select().from(roles);
+  }
+
+  async createRole(roleData: InsertRole): Promise<Role> {
+    const [role] = await db
+      .insert(roles)
+      .values(roleData)
+      .returning();
+    return role;
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -102,6 +129,21 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
+  }
+
+  async getUserWithRole(id: string): Promise<(User & { role: Role }) | undefined> {
+    const result = await db
+      .select()
+      .from(users)
+      .leftJoin(roles, eq(users.roleId, roles.id))
+      .where(eq(users.id, id));
+    
+    if (!result[0] || !result[0].roles) return undefined;
+    
+    return {
+      ...result[0].users,
+      role: result[0].roles,
+    };
   }
 
   async createUser(userData: InsertUser): Promise<User> {
@@ -116,10 +158,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).orderBy(desc(users.createdAt));
   }
 
-  async updateUserRole(userId: string, role: 'admin' | 'gestor' | 'visualizador' | 'cliente'): Promise<User> {
+  async updateUserRole(userId: string, roleId: string): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ role, updatedAt: new Date() })
+      .set({ roleId, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     return user;

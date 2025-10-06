@@ -45,7 +45,7 @@ function AuthenticatedApp() {
   return (
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
-        <AppSidebar userRole={user.role} />
+        <AppSidebar userRole={user.roleId} />
         <div className="flex flex-col flex-1 overflow-hidden">
           <header className="flex items-center justify-between p-2 border-b border-border">
             <SidebarTrigger data-testid="button-sidebar-toggle" />

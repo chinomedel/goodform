@@ -123,7 +123,7 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'cliente_saas',
+        roleId: 'cliente_saas',
         isSuperAdmin: false,
       });
 

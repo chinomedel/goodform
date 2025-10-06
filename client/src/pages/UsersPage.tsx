@@ -30,8 +30,8 @@ export default function UsersPage() {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      const res = await apiRequest("PATCH", `/api/users/${userId}/role`, { role });
+    mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) => {
+      const res = await apiRequest("PATCH", `/api/users/${userId}/role`, { roleId });
       return await res.json();
     },
     onSuccess: () => {
@@ -124,12 +124,12 @@ export default function UsersPage() {
                     <TableCell data-testid={`text-email-${user.id}`}>
                       {user.email}
                     </TableCell>
-                    <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>{getRoleBadge(user.roleId)}</TableCell>
                     <TableCell>
                       <Select
-                        value={user.role}
-                        onValueChange={(newRole) =>
-                          updateRoleMutation.mutate({ userId: user.id, role: newRole })
+                        value={user.roleId}
+                        onValueChange={(newRoleId) =>
+                          updateRoleMutation.mutate({ userId: user.id, roleId: newRoleId })
                         }
                         disabled={updateRoleMutation.isPending}
                       >

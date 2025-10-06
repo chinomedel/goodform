@@ -26,7 +26,7 @@ function isAuthenticated(req: any, res: any, next: any) {
 function requireRole(...roles: string[]) {
   return async (req: any, res: any, next: any) => {
     const user = await storage.getUser(req.user.id);
-    if (!user || !roles.includes(user.role)) {
+    if (!user || !roles.includes(user.roleId)) {
       return res.status(403).json({ message: "No tienes permisos para realizar esta acción" });
     }
     next();
@@ -86,7 +86,7 @@ async function canAccessForm(formId: string, userId: string): Promise<boolean> {
   if (!user) return false;
 
   // Admin can access everything
-  if (isAdmin(user.role)) return true;
+  if (isAdmin(user.roleId)) return true;
 
   // Creator can access their own forms
   if (form.creatorId === userId) return true;
@@ -105,7 +105,7 @@ async function canEditForm(formId: string, userId: string): Promise<boolean> {
   if (!user) return false;
 
   // Admin can edit everything
-  if (isAdmin(user.role)) return true;
+  if (isAdmin(user.roleId)) return true;
 
   // Creator can edit their own forms
   if (form.creatorId === userId) return true;
@@ -154,7 +154,7 @@ export function registerRoutes(app: Express): Server {
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'visualizador_auto_host',
+        roleId: 'visualizador_auto_host',
         isSuperAdmin: false,
       });
 
@@ -169,17 +169,17 @@ export function registerRoutes(app: Express): Server {
   app.patch('/api/users/:userId/role', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const { userId } = req.params;
-      const { role } = req.body;
+      const { roleId } = req.body;
 
       const validRoles = isSelfHostedMode() 
         ? ['admin_auto_host', 'visualizador_auto_host']
         : ['super_admin', 'cliente_saas'];
       
-      if (!validRoles.includes(role)) {
+      if (!validRoles.includes(roleId)) {
         return res.status(400).json({ message: "Rol inválido" });
       }
 
-      const user = await storage.updateUserRole(userId, role);
+      const user = await storage.updateUserRole(userId, roleId);
       res.json(user);
     } catch (error) {
       console.error("Error updating user role:", error);
@@ -214,7 +214,7 @@ export function registerRoutes(app: Express): Server {
       }
 
       let forms;
-      if (isAdmin(user.role)) {
+      if (isAdmin(user.roleId)) {
         forms = await storage.getAllForms();
       } else {
         // Get user's own forms
@@ -304,7 +304,7 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.getUser(userId);
       
       // Only creator or admin can delete
-      if (form.creatorId !== userId && (!user || !isAdmin(user.role))) {
+      if (form.creatorId !== userId && (!user || !isAdmin(user.roleId))) {
         return res.status(403).json({ message: "Not authorized to delete this form" });
       }
 
@@ -407,7 +407,7 @@ export function registerRoutes(app: Express): Server {
       const user = await storage.getUser(userId);
       
       // Only creator or admin can manage permissions
-      if (form.creatorId !== userId && (!user || !isAdmin(user.role))) {
+      if (form.creatorId !== userId && (!user || !isAdmin(user.roleId))) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
@@ -637,7 +637,7 @@ export function registerRoutes(app: Express): Server {
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'admin_auto_host',
+        roleId: 'admin_auto_host',
         isSuperAdmin: false,
       });
 
