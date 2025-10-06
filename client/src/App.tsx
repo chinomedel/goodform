@@ -17,6 +17,7 @@ import FormResponsesPage from "@/pages/FormResponsesPage";
 import PublicFormPage from "@/pages/PublicFormPage";
 import UsersPage from "@/pages/UsersPage";
 import SettingsPage from "@/pages/SettingsPage";
+import LicensesPage from "@/pages/LicensesPage";
 import AuthPage from "@/pages/auth-page";
 import SetupPage from "@/pages/SetupPage";
 import NotFound from "@/pages/not-found";
@@ -59,6 +60,7 @@ function AuthenticatedApp() {
               <Route path="/responses/:id" component={FormResponsesPage} />
               <Route path="/users" component={UsersPage} />
               <Route path="/settings" component={SettingsPage} />
+              <Route path="/licenses" component={LicensesPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
@@ -84,6 +86,7 @@ function Router() {
       <ProtectedRoute path="/responses/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/users" component={AuthenticatedApp} />
       <ProtectedRoute path="/settings" component={AuthenticatedApp} />
+      <ProtectedRoute path="/licenses" component={AuthenticatedApp} />
       
       {/* Fallback */}
       <Route component={NotFound} />
