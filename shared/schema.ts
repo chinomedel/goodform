@@ -20,7 +20,7 @@ export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']
 export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
 export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 'select', 'checkbox', 'date', 'textarea']);
 
-// Session storage table - required for Replit Auth
+// Session storage table - used by passport-local for session management
 export const sessions = pgTable(
   "sessions",
   {
@@ -31,7 +31,7 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for local authentication
+// User storage table - email/password authentication with scrypt hashing
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").notNull().unique(),
