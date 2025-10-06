@@ -3,19 +3,45 @@ import { Card } from "@/components/ui/card";
 import { FileText, Users, BarChart3, Lock, Globe, Share2 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+import { AppConfig } from "@shared/schema";
 
 export function LandingPage() {
   const [, setLocation] = useLocation();
+  
+  const { data: config } = useQuery<AppConfig>({
+    queryKey: ["/api/config"],
+  });
+
+  const appName = config?.appName || "GoodForm";
+  const logoUrl = config?.logoUrl;
+
+  const getAppInitials = () => {
+    const words = appName.split(' ');
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return appName.substring(0, 2).toUpperCase();
+  };
   
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-primary text-primary-foreground w-8 h-8 rounded-md flex items-center justify-center font-semibold">
-              GF
-            </div>
-            <span className="font-semibold text-lg">GoodForm</span>
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt={`${appName} logo`}
+                className="w-8 h-8 object-contain"
+                data-testid="img-landing-logo"
+              />
+            ) : (
+              <div className="bg-primary text-primary-foreground w-8 h-8 rounded-md flex items-center justify-center font-semibold text-xs">
+                {getAppInitials()}
+              </div>
+            )}
+            <span className="font-semibold text-lg" data-testid="text-landing-app-name">{appName}</span>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -135,7 +161,7 @@ export function LandingPage() {
             Listo para comenzar?
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Únete a miles de equipos que ya utilizan GoodForm
+            Únete a miles de equipos que ya utilizan {appName}
           </p>
           <Button
             size="lg"
@@ -149,7 +175,7 @@ export function LandingPage() {
 
       <footer className="border-t border-border py-8 px-8">
         <div className="max-w-7xl mx-auto text-center text-sm text-muted-foreground">
-          <p>© 2024 GoodForm. Todos los derechos reservados.</p>
+          <p>© 2024 {appName}. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>
