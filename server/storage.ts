@@ -216,6 +216,7 @@ export class DatabaseStorage implements IStorage {
       .update(forms)
       .set({ 
         status: 'published',
+        shareType: 'public',
         publishedAt: new Date(),
         updatedAt: new Date()
       })

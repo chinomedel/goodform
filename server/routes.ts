@@ -516,6 +516,10 @@ export function registerRoutes(app: Express): Server {
         description: form.description,
         fields: form.fields,
         shareType: form.shareType,
+        builderMode: form.builderMode,
+        customHtml: form.customHtml,
+        customCss: form.customCss,
+        customJs: form.customJs,
       });
     } catch (error) {
       console.error("Error fetching public form:", error);
