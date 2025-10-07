@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getPublicForm, submitPublicForm } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -113,32 +113,52 @@ export default function PublicFormPage() {
     );
   }
 
-  // Expose submit function for code-mode forms
-  if (form.builderMode === 'code' && typeof window !== 'undefined') {
-    (window as any).submitCustomForm = async (formData: Record<string, any>) => {
-      try {
-        const response = await submitPublicForm(id!, { 
-          answers: formData, 
-          email: formData.email || '' 
-        });
-        
-        setSubmitted(true);
-        toast({
-          title: "¡Formulario enviado!",
-          description: "Tu respuesta ha sido registrada correctamente.",
-        });
-        
-        return { success: true, data: response };
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo enviar el formulario. Inténtalo de nuevo.",
-          variant: "destructive",
-        });
-        return { success: false, error };
+  // Expose submit function and execute custom JS for code-mode forms
+  useEffect(() => {
+    if (form?.builderMode === 'code' && typeof window !== 'undefined') {
+      // Expose submit function for custom forms
+      (window as any).submitCustomForm = async (formData: Record<string, any>) => {
+        try {
+          const response = await submitPublicForm(id!, { 
+            answers: formData, 
+            email: formData.email || '' 
+          });
+          
+          setSubmitted(true);
+          toast({
+            title: "¡Formulario enviado!",
+            description: "Tu respuesta ha sido registrada correctamente.",
+          });
+          
+          return { success: true, data: response };
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "No se pudo enviar el formulario. Inténtalo de nuevo.",
+            variant: "destructive",
+          });
+          return { success: false, error };
+        }
+      };
+
+      // Execute custom JavaScript
+      if (form.customJs) {
+        try {
+          const script = document.createElement('script');
+          script.textContent = form.customJs;
+          document.body.appendChild(script);
+          
+          // Cleanup
+          return () => {
+            document.body.removeChild(script);
+            delete (window as any).submitCustomForm;
+          };
+        } catch (error) {
+          console.error('Error executing custom JS:', error);
+        }
       }
-    };
-  }
+    }
+  }, [form, id, toast]);
 
   return (
     <div className="min-h-screen bg-background py-12">
@@ -155,7 +175,6 @@ export default function PublicFormPage() {
               <div className="custom-form-container">
                 <div dangerouslySetInnerHTML={{ __html: form.customHtml || '' }} />
                 <style>{form.customCss}</style>
-                <script>{form.customJs}</script>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
