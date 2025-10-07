@@ -522,6 +522,7 @@ export function registerRoutes(app: Express): Server {
         customJs: form.customJs,
         submitButtonText: form.submitButtonText,
         submitButtonColor: form.submitButtonColor,
+        urlParams: form.urlParams,
       });
     } catch (error) {
       console.error("Error fetching public form:", error);
@@ -532,7 +533,7 @@ export function registerRoutes(app: Express): Server {
   app.post('/api/public/forms/:id/submit', async (req, res) => {
     try {
       const { id } = req.params;
-      const { answers, email } = req.body;
+      const { answers, email, urlParams } = req.body;
 
       const form = await storage.getForm(id);
       if (!form) {
@@ -552,6 +553,7 @@ export function registerRoutes(app: Express): Server {
         formId: id,
         respondentEmail: email,
         answers,
+        urlParams: urlParams || null,
       });
 
       const response = await storage.createFormResponse(responseData);

@@ -27,6 +27,7 @@ export default function PublicFormPage() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [urlParams, setUrlParams] = useState<Record<string, string>>({});
 
   const { data: form, isLoading } = useQuery({
     queryKey: ['/api/public/forms', id],
@@ -35,8 +36,25 @@ export default function PublicFormPage() {
     retry: false,
   });
 
+  // Capture URL parameters
+  useEffect(() => {
+    if (form?.urlParams && form.urlParams.length > 0) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const capturedParams: Record<string, string> = {};
+      
+      form.urlParams.forEach((param: string) => {
+        const value = searchParams.get(param);
+        if (value) {
+          capturedParams[param] = value;
+        }
+      });
+      
+      setUrlParams(capturedParams);
+    }
+  }, [form]);
+
   const submitMutation = useMutation({
-    mutationFn: () => submitPublicForm(id!, { answers, email }),
+    mutationFn: () => submitPublicForm(id!, { answers, email, urlParams }),
     onSuccess: () => {
       setSubmitted(true);
       toast({
@@ -81,7 +99,8 @@ export default function PublicFormPage() {
         try {
           const response = await submitPublicForm(id!, { 
             answers: formData, 
-            email: formData.email || '' 
+            email: formData.email || '',
+            urlParams
           });
           
           setSubmitted(true);
@@ -118,7 +137,7 @@ export default function PublicFormPage() {
         }
       }
     }
-  }, [form, id, toast]);
+  }, [form, id, toast, urlParams]);
 
   if (isLoading) {
     return (

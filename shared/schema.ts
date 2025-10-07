@@ -69,6 +69,7 @@ export const forms = pgTable("forms", {
   customJs: text("custom_js"),
   submitButtonText: varchar("submit_button_text").notNull().default('Enviar respuesta'),
   submitButtonColor: varchar("submit_button_color").notNull().default('#f97316'),
+  urlParams: jsonb("url_params"),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -100,6 +101,7 @@ export const formResponses = pgTable("form_responses", {
   respondentId: varchar("respondent_id").references(() => users.id, { onDelete: 'set null' }),
   respondentEmail: varchar("respondent_email"),
   answers: jsonb("answers").notNull(),
+  urlParams: jsonb("url_params"),
   submittedAt: timestamp("submitted_at").defaultNow(),
 });
 

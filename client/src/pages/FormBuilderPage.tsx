@@ -159,6 +159,9 @@ export default function FormBuilderPage() {
   const [submitButtonText, setSubmitButtonText] = useState("Enviar respuesta");
   const [submitButtonColor, setSubmitButtonColor] = useState("#6366f1");
   
+  const [urlParams, setUrlParams] = useState<string[]>([]);
+  const [newUrlParam, setNewUrlParam] = useState("");
+  
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const buttonTextDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -184,6 +187,7 @@ export default function FormBuilderPage() {
       setCustomJs(formData.customJs || "");
       setSubmitButtonText(formData.submitButtonText || "Enviar respuesta");
       setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
+      setUrlParams(formData.urlParams || []);
       setFields(
         formData.fields
           .sort((a, b) => a.order - b.order)
@@ -214,6 +218,7 @@ export default function FormBuilderPage() {
       customJs?: string;
       submitButtonText?: string;
       submitButtonColor?: string;
+      urlParams?: string[];
     }) =>
       updateForm(formId!, data),
     onSuccess: () => {
@@ -414,6 +419,27 @@ export default function FormBuilderPage() {
     ));
     setOptionsDialogOpen(false);
     setEditingField(null);
+  };
+
+  const addUrlParam = () => {
+    if (newUrlParam.trim() && !urlParams.includes(newUrlParam.trim())) {
+      const updatedParams = [...urlParams, newUrlParam.trim()];
+      setUrlParams(updatedParams);
+      setNewUrlParam("");
+      
+      if (formId) {
+        updateFormMutation.mutate({ urlParams: updatedParams });
+      }
+    }
+  };
+
+  const removeUrlParam = (param: string) => {
+    const updatedParams = urlParams.filter(p => p !== param);
+    setUrlParams(updatedParams);
+    
+    if (formId) {
+      updateFormMutation.mutate({ urlParams: updatedParams });
+    }
   };
 
   const handleSave = () => {
@@ -712,6 +738,55 @@ export default function FormBuilderPage() {
                       />
                     </div>
                   </div>
+                </div>
+              </div>
+              <div className="pt-2 border-t">
+                <Label className="text-sm font-semibold">Parámetros de URL</Label>
+                <p className="text-xs text-muted-foreground mt-1 mb-3">
+                  Define qué parámetros de la URL deseas capturar automáticamente con las respuestas
+                </p>
+                <div className="space-y-2">
+                  {urlParams.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No hay parámetros configurados</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {urlParams.map((param, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-background rounded border">
+                          <code className="text-xs flex-1">{param}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => removeUrlParam(param)}
+                            data-testid={`button-remove-param-${index}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      value={newUrlParam}
+                      onChange={(e) => setNewUrlParam(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addUrlParam();
+                        }
+                      }}
+                      placeholder="ej: source, email, user_id"
+                      className="flex-1"
+                      data-testid="input-new-url-param"
+                    />
+                    <Button onClick={addUrlParam} size="icon" data-testid="button-add-url-param">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Ejemplo de URL: /public/form-id?source=email&user_id=123
+                  </p>
                 </div>
               </div>
             </TabsContent>

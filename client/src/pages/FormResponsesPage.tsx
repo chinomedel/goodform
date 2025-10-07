@@ -42,6 +42,7 @@ export default function FormResponsesPage() {
   // Obtener todas las columnas dinámicamente de las respuestas
   const hasFormFields = form.fields && form.fields.length > 0;
   const dynamicColumns: string[] = [];
+  const urlParamColumns: string[] = [];
   
   if (!hasFormFields && responses && responses.length > 0) {
     // Si no hay campos del formulario, extraer las columnas de las respuestas
@@ -55,6 +56,18 @@ export default function FormResponsesPage() {
       });
     });
     dynamicColumns.push(...Array.from(allKeys).sort());
+  }
+  
+  // Extraer columnas de urlParams
+  if (responses && responses.length > 0) {
+    const allUrlParams = new Set<string>();
+    responses.forEach((response) => {
+      const params = response.urlParams as Record<string, string> | null;
+      if (params) {
+        Object.keys(params).forEach(key => allUrlParams.add(key));
+      }
+    });
+    urlParamColumns.push(...Array.from(allUrlParams).sort());
   }
 
   return (
@@ -109,11 +122,15 @@ export default function FormResponsesPage() {
                         <TableHead key={column}>{column}</TableHead>
                       ))
                     )}
+                    {urlParamColumns.map((param) => (
+                      <TableHead key={`url-${param}`}>{param}</TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {responses.map((response) => {
                     const answers = response.answers as Record<string, any>;
+                    const params = response.urlParams as Record<string, string> | null;
                     return (
                       <TableRow key={response.id} data-testid={`row-response-${response.id}`}>
                         <TableCell>
@@ -139,6 +156,11 @@ export default function FormResponsesPage() {
                             </TableCell>
                           ))
                         )}
+                        {urlParamColumns.map((param) => (
+                          <TableCell key={`url-${param}`}>
+                            {params?.[param] || '-'}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     );
                   })}

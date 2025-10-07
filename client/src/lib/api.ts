@@ -129,7 +129,7 @@ export async function getPublicForm(id: string) {
   return response.json();
 }
 
-export async function submitPublicForm(id: string, data: { answers: Record<string, any>; email?: string }) {
+export async function submitPublicForm(id: string, data: { answers: Record<string, any>; email?: string; urlParams?: Record<string, string> }) {
   const response = await fetch(`/api/public/forms/${id}/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
