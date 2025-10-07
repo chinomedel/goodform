@@ -15,6 +15,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.style.setProperty('--sidebar-primary', hsl);
       document.documentElement.style.setProperty('--sidebar-ring', hsl);
       document.documentElement.style.setProperty('--ring', hsl);
+      document.documentElement.style.setProperty('--chart-1', hsl);
     }
 
     if (config?.faviconUrl) {

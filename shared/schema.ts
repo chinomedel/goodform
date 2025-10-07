@@ -68,7 +68,7 @@ export const forms = pgTable("forms", {
   customCss: text("custom_css"),
   customJs: text("custom_js"),
   submitButtonText: varchar("submit_button_text").notNull().default('Enviar respuesta'),
-  submitButtonColor: varchar("submit_button_color").notNull().default('#6366f1'),
+  submitButtonColor: varchar("submit_button_color").notNull().default('#f97316'),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -108,7 +108,7 @@ export const appConfig = pgTable("app_config", {
   appName: varchar("app_name").notNull().default('GoodForm'),
   logoUrl: text("logo_url"),
   faviconUrl: text("favicon_url"),
-  primaryColor: varchar("primary_color").notNull().default('#6366f1'),
+  primaryColor: varchar("primary_color").notNull().default('#f97316'),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
