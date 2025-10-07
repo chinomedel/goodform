@@ -520,6 +520,8 @@ export function registerRoutes(app: Express): Server {
         customHtml: form.customHtml,
         customCss: form.customCss,
         customJs: form.customJs,
+        submitButtonText: form.submitButtonText,
+        submitButtonColor: form.submitButtonColor,
       });
     } catch (error) {
       console.error("Error fetching public form:", error);
