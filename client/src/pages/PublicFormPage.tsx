@@ -113,6 +113,33 @@ export default function PublicFormPage() {
     );
   }
 
+  // Expose submit function for code-mode forms
+  if (form.builderMode === 'code' && typeof window !== 'undefined') {
+    (window as any).submitCustomForm = async (formData: Record<string, any>) => {
+      try {
+        const response = await submitPublicForm(id!, { 
+          answers: formData, 
+          email: formData.email || '' 
+        });
+        
+        setSubmitted(true);
+        toast({
+          title: "¡Formulario enviado!",
+          description: "Tu respuesta ha sido registrada correctamente.",
+        });
+        
+        return { success: true, data: response };
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo enviar el formulario. Inténtalo de nuevo.",
+          variant: "destructive",
+        });
+        return { success: false, error };
+      }
+    };
+  }
+
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="container mx-auto max-w-2xl">

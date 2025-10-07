@@ -900,23 +900,59 @@ export default function FormBuilderPage() {
                         </div>
 
                         <div>
-                          <h4 className="font-semibold mb-2">5. Validación con JavaScript (Opcional)</h4>
+                          <h4 className="font-semibold mb-2">5. Enviar el Formulario (IMPORTANTE)</h4>
                           <p className="text-muted-foreground mb-2">
-                            Puedes agregar validación personalizada en la pestaña JavaScript:
+                            Para que tu formulario se envíe correctamente y muestre el mensaje de éxito, 
+                            debes usar la función <code className="bg-muted px-1 py-0.5 rounded">submitCustomForm()</code> en tu JavaScript:
                           </p>
                           <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
-                            <pre>{`// Validación personalizada
-document.getElementById('customForm')?.addEventListener('submit', function(e) {
+                            <pre>{`// Capturar el evento submit del formulario
+document.getElementById('customForm')?.addEventListener('submit', async function(e) {
+  e.preventDefault(); // Prevenir envío por defecto
+  
+  // Obtener los datos del formulario
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  
+  // Enviar usando la función global
+  const result = await submitCustomForm(data);
+  
+  if (result.success) {
+    console.log('Formulario enviado exitosamente!');
+    // Se mostrará automáticamente el mensaje de éxito
+  }
+});`}</pre>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold mb-2">6. Ejemplo Completo con Validación y Envío</h4>
+                          <p className="text-muted-foreground mb-2">
+                            Combina validación personalizada con el envío correcto:
+                          </p>
+                          <div className="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                            <pre>{`document.getElementById('customForm')?.addEventListener('submit', async function(e) {
   e.preventDefault();
   
+  // Validación personalizada
   const email = document.querySelector('[name="email"]').value;
   if (!email.includes('@')) {
     alert('Por favor ingresa un email válido');
     return;
   }
   
-  // Continuar con el envío
-  this.submit();
+  // Obtener datos del formulario
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  
+  // Enviar el formulario
+  const result = await submitCustomForm(data);
+  
+  if (result.success) {
+    console.log('¡Enviado con éxito!');
+  } else {
+    console.error('Error al enviar:', result.error);
+  }
 });`}</pre>
                           </div>
                         </div>
@@ -924,7 +960,8 @@ document.getElementById('customForm')?.addEventListener('submit', function(e) {
                         <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-4 rounded-md">
                           <p className="text-sm">
                             <strong>💡 Nota Importante:</strong> Los formularios personalizados se mostrarán exactamente como los diseñes. 
-                            Asegúrate de probar tu formulario usando la pestaña "Preview" antes de publicarlo.
+                            Asegúrate de usar <code className="bg-muted px-1 py-0.5 rounded text-xs">submitCustomForm()</code> en tu JavaScript 
+                            para enviar los datos correctamente y probar tu formulario usando la pestaña "Preview" antes de publicarlo.
                           </p>
                         </div>
                       </div>
