@@ -73,46 +73,6 @@ export default function PublicFormPage() {
     submitMutation.mutate();
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" data-testid="loading-form">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!form) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">
-              Formulario no encontrado o no disponible
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-            <div>
-              <h2 className="text-2xl font-bold">¡Gracias!</h2>
-              <p className="text-muted-foreground mt-2">
-                Tu respuesta ha sido enviada correctamente
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   // Expose submit function and execute custom JS for code-mode forms
   useEffect(() => {
     if (form?.builderMode === 'code' && typeof window !== 'undefined') {
@@ -159,6 +119,46 @@ export default function PublicFormPage() {
       }
     }
   }, [form, id, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" data-testid="loading-form">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!form) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <p className="text-center text-muted-foreground">
+              Formulario no encontrado o no disponible
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (submitted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+            <div>
+              <h2 className="text-2xl font-bold">¡Gracias!</h2>
+              <p className="text-muted-foreground mt-2">
+                Tu respuesta ha sido enviada correctamente
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-12">
