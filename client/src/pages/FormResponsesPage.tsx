@@ -39,6 +39,24 @@ export default function FormResponsesPage() {
     );
   }
 
+  // Obtener todas las columnas dinámicamente de las respuestas
+  const hasFormFields = form.fields && form.fields.length > 0;
+  const dynamicColumns: string[] = [];
+  
+  if (!hasFormFields && responses && responses.length > 0) {
+    // Si no hay campos del formulario, extraer las columnas de las respuestas
+    const allKeys = new Set<string>();
+    responses.forEach((response) => {
+      const answers = response.answers as Record<string, any>;
+      Object.keys(answers).forEach(key => {
+        if (key !== 'email') { // Excluir email ya que se muestra en otra columna
+          allKeys.add(key);
+        }
+      });
+    });
+    dynamicColumns.push(...Array.from(allKeys).sort());
+  }
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -82,9 +100,15 @@ export default function FormResponsesPage() {
                   <TableRow>
                     <TableHead>Fecha</TableHead>
                     <TableHead>Email</TableHead>
-                    {form.fields.map((field) => (
-                      <TableHead key={field.id}>{field.label}</TableHead>
-                    ))}
+                    {hasFormFields ? (
+                      form.fields.map((field) => (
+                        <TableHead key={field.id}>{field.label}</TableHead>
+                      ))
+                    ) : (
+                      dynamicColumns.map((column) => (
+                        <TableHead key={column}>{column}</TableHead>
+                      ))
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -98,13 +122,23 @@ export default function FormResponsesPage() {
                             : '-'}
                         </TableCell>
                         <TableCell>{response.respondentEmail || '-'}</TableCell>
-                        {form.fields.map((field) => (
-                          <TableCell key={field.id}>
-                            {Array.isArray(answers[field.id])
-                              ? answers[field.id].join(', ')
-                              : answers[field.id] || '-'}
-                          </TableCell>
-                        ))}
+                        {hasFormFields ? (
+                          form.fields.map((field) => (
+                            <TableCell key={field.id}>
+                              {Array.isArray(answers[field.id])
+                                ? answers[field.id].join(', ')
+                                : answers[field.id] || '-'}
+                            </TableCell>
+                          ))
+                        ) : (
+                          dynamicColumns.map((column) => (
+                            <TableCell key={column}>
+                              {Array.isArray(answers[column])
+                                ? answers[column].join(', ')
+                                : answers[column] || '-'}
+                            </TableCell>
+                          ))
+                        )}
                       </TableRow>
                     );
                   })}
