@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GripVertical, Trash2, Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
 
@@ -11,6 +12,7 @@ interface FormBuilderFieldProps {
   label: string;
   required?: boolean;
   placeholder?: string;
+  options?: string[];
   onDelete?: () => void;
   onSettings?: () => void;
   onLabelChange?: (newLabel: string) => void;
@@ -35,6 +37,7 @@ export function FormBuilderField({
   label,
   required,
   placeholder,
+  options,
   onDelete,
   onSettings,
   onLabelChange,
@@ -42,6 +45,8 @@ export function FormBuilderField({
   onDragOver,
   onDragEnd,
 }: FormBuilderFieldProps) {
+  const needsOptions = type === 'select' || type === 'checkbox';
+  
   return (
     <Card 
       className="p-4 mb-2" 
@@ -77,6 +82,20 @@ export function FormBuilderField({
           </div>
           {placeholder && (
             <p className="text-xs text-muted-foreground">{placeholder}</p>
+          )}
+          {needsOptions && options && options.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {options.map((option, idx) => (
+                <Badge key={idx} variant="secondary" className="text-xs">
+                  {option}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {needsOptions && (!options || options.length === 0) && (
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
+              ⚠️ Haz clic en configuración para agregar opciones
+            </p>
           )}
         </div>
 

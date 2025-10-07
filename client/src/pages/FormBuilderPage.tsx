@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
 import { Card } from "@/components/ui/card";
-import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle } from "lucide-react";
+import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Tabs,
@@ -41,6 +41,105 @@ interface LocalField {
   order: number;
 }
 
+function FieldOptionsEditor({ 
+  field, 
+  onSave, 
+  onCancel 
+}: { 
+  field: LocalField | null; 
+  onSave: (fieldId: string, options: string[]) => void; 
+  onCancel: () => void; 
+}) {
+  const [options, setOptions] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState("");
+
+  useEffect(() => {
+    if (field?.options) {
+      setOptions(field.options);
+    } else {
+      setOptions([]);
+    }
+  }, [field]);
+
+  const addOption = () => {
+    if (newOption.trim()) {
+      setOptions([...options, newOption.trim()]);
+      setNewOption("");
+    }
+  };
+
+  const removeOption = (index: number) => {
+    setOptions(options.filter((_, i) => i !== index));
+  };
+
+  const handleSave = () => {
+    if (field && options.length > 0) {
+      onSave(field.id, options);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label>Opciones existentes</Label>
+        {options.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No hay opciones agregadas</p>
+        ) : (
+          <div className="space-y-2">
+            {options.map((option, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input value={option} readOnly className="flex-1" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeOption(index)}
+                  data-testid={`button-remove-option-${index}`}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Agregar nueva opción</Label>
+        <div className="flex gap-2">
+          <Input
+            value={newOption}
+            onChange={(e) => setNewOption(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addOption();
+              }
+            }}
+            placeholder="Escribe una opción y presiona Enter"
+            data-testid="input-new-option"
+          />
+          <Button onClick={addOption} size="icon" data-testid="button-add-option">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="outline" onClick={onCancel} data-testid="button-cancel-options">
+          Cancelar
+        </Button>
+        <Button 
+          onClick={handleSave} 
+          disabled={options.length === 0}
+          data-testid="button-save-options"
+        >
+          Guardar
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function FormBuilderPage() {
   const params = useParams<{ id?: string }>();
   const formId = params.id;
@@ -61,6 +160,8 @@ export default function FormBuilderPage() {
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<LocalField | null>(null);
+  const [optionsDialogOpen, setOptionsDialogOpen] = useState(false);
 
   const { data: formData, isLoading } = useQuery({
     queryKey: ["/api/forms", formId],
@@ -216,6 +317,7 @@ export default function FormBuilderPage() {
       label: `Nuevo campo ${type}`,
       required: false,
       placeholder: "",
+      options: type === 'select' || type === 'checkbox' ? [] : undefined,
       order: nextFieldId,
     };
 
@@ -259,6 +361,22 @@ export default function FormBuilderPage() {
 
   const handleDragEnd = () => {
     setDraggedFieldId(null);
+  };
+
+  const openFieldSettings = (fieldId: string) => {
+    const field = fields.find(f => f.id === fieldId);
+    if (field && (field.type === 'select' || field.type === 'checkbox')) {
+      setEditingField(field);
+      setOptionsDialogOpen(true);
+    }
+  };
+
+  const updateFieldOptions = (fieldId: string, options: string[]) => {
+    setFields(fields.map((f) => 
+      f.id === fieldId ? { ...f, options } : f
+    ));
+    setOptionsDialogOpen(false);
+    setEditingField(null);
   };
 
   const handleSave = () => {
@@ -463,8 +581,9 @@ export default function FormBuilderPage() {
                   label={field.label}
                   required={field.required}
                   placeholder={field.placeholder}
+                  options={field.options}
                   onDelete={() => deleteField(field.id)}
-                  onSettings={() => console.log("Settings", field.id)}
+                  onSettings={() => openFieldSettings(field.id)}
                   onLabelChange={(newLabel) => updateFieldLabel(field.id, newLabel)}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
@@ -535,6 +654,26 @@ export default function FormBuilderPage() {
             </TabsContent>
           </Tabs>
         </aside>
+
+        {/* Dialog para editar opciones de select/checkbox */}
+        <Dialog open={optionsDialogOpen} onOpenChange={setOptionsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Configurar opciones</DialogTitle>
+              <DialogDescription>
+                Agrega las opciones para el campo "{editingField?.label}"
+              </DialogDescription>
+            </DialogHeader>
+            <FieldOptionsEditor
+              field={editingField}
+              onSave={updateFieldOptions}
+              onCancel={() => {
+                setOptionsDialogOpen(false);
+                setEditingField(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
           </>
         ) : (
           <main className="flex-1 overflow-y-auto p-8">
