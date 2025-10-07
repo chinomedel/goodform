@@ -261,6 +261,7 @@ export default function PublicFormPage() {
                   type="submit"
                   className="w-full"
                   disabled={submitMutation.isPending}
+                  style={{ backgroundColor: form.submitButtonColor }}
                   data-testid="button-submit"
                 >
                   {submitMutation.isPending ? (
@@ -269,7 +270,7 @@ export default function PublicFormPage() {
                       Enviando...
                     </>
                   ) : (
-                    'Enviar respuesta'
+                    form.submitButtonText || 'Enviar respuesta'
                   )}
                 </Button>
               </form>

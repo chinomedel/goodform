@@ -67,6 +67,8 @@ export const forms = pgTable("forms", {
   customHtml: text("custom_html"),
   customCss: text("custom_css"),
   customJs: text("custom_js"),
+  submitButtonText: varchar("submit_button_text").notNull().default('Enviar respuesta'),
+  submitButtonColor: varchar("submit_button_color").notNull().default('#6366f1'),
   publishedAt: timestamp("published_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

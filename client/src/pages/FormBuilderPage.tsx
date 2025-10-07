@@ -156,8 +156,13 @@ export default function FormBuilderPage() {
   const [customCss, setCustomCss] = useState("");
   const [customJs, setCustomJs] = useState("");
   
+  const [submitButtonText, setSubmitButtonText] = useState("Enviar respuesta");
+  const [submitButtonColor, setSubmitButtonColor] = useState("#6366f1");
+  
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const buttonTextDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const buttonColorDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<LocalField | null>(null);
@@ -177,6 +182,8 @@ export default function FormBuilderPage() {
       setCustomHtml(formData.customHtml || "");
       setCustomCss(formData.customCss || "");
       setCustomJs(formData.customJs || "");
+      setSubmitButtonText(formData.submitButtonText || "Enviar respuesta");
+      setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
       setFields(
         formData.fields
           .sort((a, b) => a.order - b.order)
@@ -205,6 +212,8 @@ export default function FormBuilderPage() {
       customHtml?: string;
       customCss?: string;
       customJs?: string;
+      submitButtonText?: string;
+      submitButtonColor?: string;
     }) =>
       updateForm(formId!, data),
     onSuccess: () => {
@@ -299,6 +308,34 @@ export default function FormBuilderPage() {
   const handleDescriptionChange = (newDescription: string) => {
     setFormDescription(newDescription);
     debouncedUpdateDescription(newDescription);
+  };
+
+  const handleButtonTextChange = (newText: string) => {
+    setSubmitButtonText(newText);
+    
+    if (buttonTextDebounceTimer.current) {
+      clearTimeout(buttonTextDebounceTimer.current);
+    }
+    
+    buttonTextDebounceTimer.current = setTimeout(() => {
+      if (formId) {
+        updateFormMutation.mutate({ submitButtonText: newText });
+      }
+    }, 1000);
+  };
+
+  const handleButtonColorChange = (newColor: string) => {
+    setSubmitButtonColor(newColor);
+    
+    if (buttonColorDebounceTimer.current) {
+      clearTimeout(buttonColorDebounceTimer.current);
+    }
+    
+    buttonColorDebounceTimer.current = setTimeout(() => {
+      if (formId) {
+        updateFormMutation.mutate({ submitButtonColor: newColor });
+      }
+    }, 1000);
   };
 
   const addField = (type: FieldType) => {
@@ -597,9 +634,10 @@ export default function FormBuilderPage() {
                     type="button" 
                     className="w-full" 
                     disabled
+                    style={{ backgroundColor: submitButtonColor }}
                     data-testid="button-submit-preview"
                   >
-                    Enviar respuesta
+                    {submitButtonText}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center mt-2">
                     Este botón aparecerá en el formulario publicado
@@ -640,6 +678,41 @@ export default function FormBuilderPage() {
                 <p className="text-sm text-muted-foreground mt-1" data-testid="text-response-count">
                   {formData ? `${formData.fields.length} campos` : "0 campos"}
                 </p>
+              </div>
+              <div className="pt-2 border-t">
+                <Label className="text-sm font-semibold">Botón de envío</Label>
+                <div className="space-y-3 mt-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Texto del botón</Label>
+                    <Input
+                      value={submitButtonText}
+                      onChange={(e) => handleButtonTextChange(e.target.value)}
+                      placeholder="Enviar respuesta"
+                      className="mt-1"
+                      data-testid="input-button-text"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Color del botón</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        type="color"
+                        value={submitButtonColor}
+                        onChange={(e) => handleButtonColorChange(e.target.value)}
+                        className="w-14 h-9 p-1 cursor-pointer"
+                        data-testid="input-button-color-picker"
+                      />
+                      <Input
+                        type="text"
+                        value={submitButtonColor}
+                        onChange={(e) => handleButtonColorChange(e.target.value)}
+                        placeholder="#6366f1"
+                        className="flex-1"
+                        data-testid="input-button-color-text"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </TabsContent>
             <TabsContent value="sharing" className="space-y-4 mt-4">
