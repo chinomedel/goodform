@@ -34,28 +34,41 @@ const COLORS = ['#f97316', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'
 export default function ChartRenderer({ chart, responses, onDelete }: ChartRendererProps) {
   const chartData = useMemo(() => {
     const dataMap = new Map<string, number>();
+    const countMap = new Map<string, number>(); // Para calcular promedio correctamente
 
     responses.forEach((response) => {
       const answers = response.answers as Record<string, any>;
       const urlParams = response.urlParams as Record<string, any> || {};
-      const allData = { ...answers, ...urlParams };
       
-      const xValue = String(allData[chart.xAxisField] || 'Sin respuesta');
+      // Normalizar acceso a datos: soportar tanto visual (answers.values) como código (answers directo)
+      const normalizedAnswers = answers?.values || answers || {};
+      const allData = { ...normalizedAnswers, ...urlParams };
+      
+      // Obtener valor de X y manejarlo si es array
+      let xRawValue = allData[chart.xAxisField];
+      if (Array.isArray(xRawValue)) {
+        xRawValue = xRawValue.join(', ');
+      }
+      const xValue = String(xRawValue || 'Sin respuesta');
       
       if (chart.aggregationType === 'count') {
         dataMap.set(xValue, (dataMap.get(xValue) || 0) + 1);
       } else if (chart.yAxisField) {
-        const yValue = Number(allData[chart.yAxisField]) || 0;
+        let yRawValue = allData[chart.yAxisField];
+        if (Array.isArray(yRawValue)) {
+          yRawValue = yRawValue[0]; // Tomar primer valor si es array
+        }
+        const yValue = Number(yRawValue) || 0;
         const current = dataMap.get(xValue) || 0;
+        const count = countMap.get(xValue) || 0;
         
         switch (chart.aggregationType) {
           case 'sum':
             dataMap.set(xValue, current + yValue);
             break;
           case 'avg':
-            // Para promedio, necesitamos rastrear suma y conteo por separado
-            // Por simplicidad, solo sumamos aquí y dividimos después
             dataMap.set(xValue, current + yValue);
+            countMap.set(xValue, count + 1);
             break;
           case 'min':
             dataMap.set(xValue, current === 0 ? yValue : Math.min(current, yValue));
@@ -66,6 +79,14 @@ export default function ChartRenderer({ chart, responses, onDelete }: ChartRende
         }
       }
     });
+
+    // Para promedio, dividir por conteo
+    if (chart.aggregationType === 'avg') {
+      dataMap.forEach((value, key) => {
+        const count = countMap.get(key) || 1;
+        dataMap.set(key, value / count);
+      });
+    }
 
     return Array.from(dataMap.entries()).map(([name, value]) => ({
       name,

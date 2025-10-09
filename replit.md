@@ -1,354 +1,59 @@
 # GoodForm - Plataforma de Gestión de Formularios
 
-## Descripción General
-GoodForm es una plataforma web completa en español para gestión de formularios con las siguientes capacidades:
-- **Modo Dual de Constructor**: Visual (drag-and-drop) y Código (HTML/CSS/JS personalizado)
-- Autenticación email/password con hashing seguro (scrypt)
-- Sistema de roles deployment-specific (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas)
-- Permisos granulares por formulario
-- Exportación a Excel y dashboard de análisis
-- Formularios públicos y privados
-- Páginas de administración para gestión de usuarios y configuración (solo admin)
-
-## Estado del Proyecto
-✅ **Completado:**
-- Backend completo con API REST
-- Base de datos PostgreSQL con Drizzle ORM
-- Sistema de autenticación email/password con passport-local
-- Frontend React con React Query
-- Dashboard con estadísticas en tiempo real
-- **Modo Dual de Constructor:**
-  - Modo Visual: Drag-and-drop con campos predefinidos
-  - Modo Código: Editor de HTML/CSS/JS con preview en tiempo real
-  - Toggle para cambiar entre modos
-  - Auto-guardado en ambos modos
-- Sistema de respuestas públicas (renderiza según builder_mode)
-- Exportación a Excel
-- Sistema de roles deployment-specific (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas)
-- Páginas de administración (Usuarios y Configuración) exclusivas para admins
-- **Sistema Dual SaaS + Auto-Host:**
-  - Detección de modo deployment (DEPLOYMENT_MODE)
-  - Wizard de setup inicial para Auto-Host
-  - Bloqueo de registro público en Auto-Host
-  - Sistema de licencias con validación online
-  - Límite de 5 formularios sin licencia
-  - Endpoints de administración de licencias (super admin)
-
-🚧 **En Progreso:**
-- Dashboard de generación de códigos para super admin
-- Validación diaria automática con período de gracia
-- Pestaña de Licencia en Settings
-
-## Arquitectura
-
-### Backend (`server/`)
-- **Express.js** como servidor web
-- **Drizzle ORM** para PostgreSQL
-- **Passport-local** para autenticación email/password
-- **Scrypt** para hashing de contraseñas
-- **connect-pg-simple** para almacenamiento de sesiones en PostgreSQL
-- **ExcelJS** para exportación de datos
-- **Inicialización automática** de base de datos en el primer arranque
-
-### Frontend (`client/`)
-- **React** con TypeScript
-- **React Query** para estado del servidor
-- **Wouter** para enrutamiento
-- **Shadcn/UI** con Tailwind CSS
-- **Material Design 3** con estética Linear
-
-### Base de Datos
-Esquema completo en `shared/schema.ts`:
-- `roles` - Tabla de roles del sistema (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas)
-- `users` - Usuarios con `roleId` (foreign key a roles table) y campo `isSuperAdmin`
-- `forms` - Formularios con configuración y modo constructor
-  - `builderMode` - 'visual' | 'code' (default: 'visual')
-  - `customHtml` - HTML personalizado (modo código)
-  - `customCss` - CSS personalizado (modo código)
-  - `customJs` - JavaScript personalizado (modo código)
-- `form_fields` - Campos dinámicos de formularios (modo visual)
-- `form_responses` - Respuestas de formularios
-- `form_permissions` - Permisos colaborativos
-- `sessions` - Sesiones de Passport
-- `app_config` - Configuración global de la aplicación (single-row, id='default')
-- `deployments` - Configuración de deployment (Auto-Host)
-- `licenses` - Códigos de licencia (SaaS)
-
-**Inicialización Automática:**
-- Las tablas se crean automáticamente en el primer inicio
-- Script `server/init-db.ts` detecta si la BD está vacía y puebla tabla `roles`
-- No requiere ejecutar migraciones manualmente
-- **Sistema de roles**: Usa tabla dedicada `roles` con relación foreign key desde `users.roleId`
-
-## Flujo de Autenticación
-
-### Rutas de Autenticación
-- `POST /api/register` - Registrar nuevo usuario (email, password, firstName?, lastName?)
-- `POST /api/login` - Iniciar sesión con email/password
-- `POST /api/logout` - Cerrar sesión
-- `GET /api/user` - Obtener usuario actual autenticado
-
-### Frontend
-- `/auth` - Página de login/registro con tabs
-- `useAuth` hook - Context para manejo de autenticación
-- `ProtectedRoute` - Componente para proteger rutas privadas
-
-### Notas Importantes
-1. **Contraseñas**: Se hashean con scrypt (salt + hash) antes de almacenar en base de datos
-2. **Sesiones**: Se almacenan en PostgreSQL usando `connect-pg-simple` con cookies httpOnly
-3. **Seguridad**: Cookies configuradas como secure/sameSite según el entorno
-4. **Roles**: Usuarios nuevos se crean como "gestor" por defecto
-
-## Roles y Permisos
-
-### Roles del Sistema
-- **Admin**: Acceso completo, puede gestionar usuarios y configuración del sistema
-- **Gestor**: Puede crear, editar y compartir formularios
-- **Visualizador**: Solo puede ver respuestas de formularios compartidos
-- **Cliente**: Rol básico para usuarios externos, acceso limitado
-
-### Permisos por Formulario
-- **Owner**: Creador del formulario, control total
-- **Editor**: Puede editar formulario y ver respuestas
-- **Viewer**: Solo puede ver respuestas
-
-## Rutas Principales
-
-### Públicas
-- `/auth` - Página de login/registro
-- `/public/:id` - Formulario público para responder
-
-### Autenticadas (requieren login)
-- `/` - Dashboard con estadísticas (redirige a /auth si no autenticado)
-- `/forms` - Lista de formularios
-- `/builder` - Crear nuevo formulario
-- `/builder/:id` - Editar formulario existente
-- `/responses/:id` - Ver respuestas de formulario
-- `/users` - Gestión de usuarios (solo admin)
-- `/settings` - Configuración de cuenta y sistema (solo admin)
-
-## API Endpoints
-
-### Autenticación
-- `POST /api/register` - Registrar nuevo usuario
-- `POST /api/login` - Iniciar sesión
-- `POST /api/logout` - Cerrar sesión
-- `GET /api/user` - Obtener usuario actual
-
-### Formularios
-- `GET /api/forms` - Listar formularios del usuario
-- `POST /api/forms` - Crear formulario
-- `GET /api/forms/:id` - Obtener formulario
-- `PATCH /api/forms/:id` - Actualizar formulario
-- `DELETE /api/forms/:id` - Eliminar formulario
-- `POST /api/forms/:id/publish` - Publicar/despublicar
-- `GET /api/forms/:id/export` - Exportar a Excel
-
-### Formularios Públicos
-- `GET /api/public/forms/:id` - Obtener formulario público
-- `POST /api/public/forms/:id/responses` - Enviar respuesta
-
-### Respuestas
-- `GET /api/forms/:id/responses` - Listar respuestas
-
-### Dashboard
-- `GET /api/dashboard/stats` - Estadísticas generales
-
-### Usuarios (Admin)
-- `GET /api/users` - Listar usuarios
-- `PATCH /api/users/:id/role` - Cambiar rol
-
-### Configuración (Admin)
-- `GET /api/config` - Obtener configuración global de la aplicación
-- `PATCH /api/config` - Actualizar configuración (appName, logoUrl, faviconUrl, primaryColor)
-
-## Características Técnicas
-
-### Auto-guardado
-El constructor de formularios implementa auto-guardado con debounce de 1 segundo para título y descripción.
-
-### Configuración de la Aplicación
-La página de Configuración permite a los administradores personalizar la aplicación:
-- **Nombre de la aplicación**: Personalizable para self-hosting, se refleja en sidebar, landing page y título del documento
-- **Logo URL**: URL del logo corporativo con preview en tiempo real, se muestra en sidebar y landing page
-- **Favicon URL**: URL del favicon con preview en tiempo real, se aplica dinámicamente al documento
-- **Color primario**: Color de la marca con tres opciones de selección:
-  - Selector de color nativo de HTML5
-  - Paleta de 12 colores predefinidos
-  - Input de texto para códigos hexadecimales manuales
-- Previsualizaciones en tiempo real usando `form.watch()`
-- Los campos opcionales (logo/favicon) pueden ser limpiados
-- Backend normaliza strings vacíos a null automáticamente
-- **ConfigProvider**: Componente que aplica dinámicamente:
-  - Convierte color hex a HSL y actualiza variables CSS (--primary, --sidebar-primary, --ring)
-  - Actualiza favicon del documento
-  - Actualiza título del documento con el nombre de la app
-  - Se ejecuta al inicio y al cambiar la configuración
-
-### Página de Usuarios
-- Lista todos los usuarios con sus roles y fechas de registro
-- Permite cambiar roles de usuarios (solo admin)
-- Muestra estado vacío amigable en instalaciones nuevas sin usuarios
-
-### Validación
-- Frontend: React Hook Form con Zod
-- Backend: Validación de permisos en todas las rutas
-
-### Seguridad
-- Contraseñas hasheadas con scrypt (salt + hash)
-- Sesiones almacenadas en PostgreSQL con cookies httpOnly
-- Cookies configuradas como secure/sameSite según entorno
-- Validación de roles y permisos en backend
-- Sanitización de entrada de usuario
-- Rutas protegidas con middleware isAuthenticated
-
-## Variables de Entorno Requeridas
-
-```
-DATABASE_URL - URL de PostgreSQL (auto-configurado en Replit)
-SESSION_SECRET - Secret para sesiones (auto-configurado en Replit)
-NODE_ENV - Entorno de ejecución (development/production)
-```
-
-## Ejecutar el Proyecto
-
-```bash
-npm run dev
-```
-
-Esto inicia:
-- Backend Express en modo desarrollo
-- Frontend Vite con HMR
-- Servidor único en puerto 5000
-
-## Sistema Dual: SaaS + Auto-Host
-
-### Modos de Deployment
-
-#### Modo SaaS (por defecto)
-- `DEPLOYMENT_MODE=saas` o sin variable
-- nmedelb@gmail.com es el super administrador (isSuperAdmin=true)
-- Registro público habilitado
-- Todas las funcionalidades disponibles sin límites
-- Puede generar licencias para instalaciones Auto-Host
-
-#### Modo Auto-Host
-- `DEPLOYMENT_MODE=self-hosted`
-- Primera ejecución: redirige a `/setup` para crear admin inicial
-- Registro público bloqueado - solo el admin crea usuarios
-- Límite de 5 formularios sin licencia válida
-- Requiere código de licencia para uso ilimitado
-
-### Sistema de Licencias
-
-#### Estructura de Licencia
-- `licenseKey`: Código único (GF-XXXXX-XXXXX)
-- `issuedToEmail`: Email del cliente
-- `expiresAt`: Fecha de expiración
-- `status`: active | revoked | expired
-
-#### Validación (Modo Auto-Host)
-1. **Validación Online**: Auto-Host consulta a SaaS diariamente
-   - Endpoint: `POST /api/license/validate`
-   - Valida existencia, estado y expiración
-2. **Período de Gracia**: 3 días sin conexión
-   - Si no puede validar, usa última validación exitosa
-   - Si > 3 días, marca licencia como inválida
-3. **Límite de Formularios**: Sin licencia válida = máx 5 formularios
-
-### Endpoints del Sistema
-
-#### Setup (Auto-Host)
-- `POST /api/setup` - Crear admin inicial y completar setup
-- `GET /api/setup/status` - Verificar si setup está completo
-
-#### Licencias (Auto-Host)
-- `GET /api/license/status` - Estado actual de licencia
-- `POST /api/license/activate` - Activar código de licencia
-
-#### Administración de Licencias (Super Admin - SaaS)
-- `POST /api/admin/licenses/issue` - Generar nueva licencia
-- `GET /api/admin/licenses` - Listar todas las licencias
-- `PATCH /api/admin/licenses/:id/revoke` - Revocar licencia
-
-#### Validación (SaaS)
-- `POST /api/license/validate` - Validar licencia (usado por Auto-Host)
-
-### Flujos Principales
-
-#### Instalación Auto-Host
-1. Usuario descarga e instala aplicación
-2. Configura `DEPLOYMENT_MODE=self-hosted`
-3. Primera visita → redirige a `/setup`
-4. Completa wizard: email, password, (opcional) código de licencia
-5. Crea deployment y admin inicial
-6. Redirige a `/auth` para login
-
-#### Generación de Licencia (Super Admin)
-1. nmedelb@gmail.com accede a dashboard de licencias
-2. Completa formulario: email cliente, fecha expiración, notas
-3. Sistema genera código único (GF-XXXXX-XXXXX)
-4. Guarda en DB con estado "active"
-5. Super admin copia código y envía al cliente
-
-#### Activación de Licencia (Cliente Auto-Host)
-1. Admin ingresa a `/settings` > Licencia
-2. Ingresa código recibido
-3. Sistema valida contra SaaS
-4. Si válida: actualiza deployment con licencia
-5. Desbloquea funcionalidades
-
-## Distribución Auto-Host
-
-La aplicación se puede instalar de 3 formas:
-
-### 1. **NPM Global** (para desarrollo)
-```bash
-npm install -g goodform
-goodform setup
-```
-- Ver `NPM_DISTRIBUTION.md` para configuración completa
-- Requiere PostgreSQL instalado por separado
-
-### 2. **Docker** (standalone)
-```bash
-docker build -t goodform .
-docker run -p 5000:5000 goodform
-```
-- Usa `Dockerfile` multi-stage optimizado
-- Requiere PostgreSQL externo
-
-### 3. **Docker Compose** (recomendado - todo incluido)
-```bash
-docker-compose up -d
-```
-- Incluye PostgreSQL automáticamente
-- Configuración en `docker-compose.yml`
-- Variables en `.env.example`
-
-Ver `INSTALL.md` para guía completa de instalación.
-
-## Próximos Pasos Posibles
-
-1. **Dashboard de Licencias**: UI completa para super admin
-2. **Validación Automática**: Job diario para verificar licencias
-3. **Sistema de Notificaciones**: Emails cuando se reciben respuestas
-4. **Templates de Formularios**: Plantillas pre-diseñadas
-5. **Lógica Condicional**: Campos que aparecen según respuestas anteriores
-6. **Análisis Avanzado**: Gráficos más complejos y filtros
-7. **Webhooks**: Integración con servicios externos
-8. **Multi-idioma**: Soporte para otros idiomas además de español
-
-## Notas de Desarrollo
-
-### Convenciones de Código
-- Todos los textos en español
-- Data-testid en todos los elementos interactivos
-- Tailwind CSS para estilos
-- Componentes Shadcn/UI reutilizables
-
-### Estructura de Almacenamiento
-El proyecto usa almacenamiento en PostgreSQL (no memoria) para persistencia de datos en producción.
-
-### Material Design 3
-Los colores y componentes siguen Material Design 3 con refinamiento estético inspirado en Linear para look profesional y empresarial.
+## Overview
+GoodForm is a comprehensive web platform for form management, supporting both visual drag-and-drop and code-based (HTML/CSS/JS) form builders. It features a robust authentication system, granular permissions, data export to Excel, real-time analytics dashboards, and support for public/private forms. The platform is designed with a dual SaaS and Auto-Host deployment model, including a licensing system. Its primary purpose is to provide a flexible and powerful tool for users to create, deploy, and manage various types of forms and analyze their responses. The project aims to offer a professional and business-oriented user experience with a focus on ease of use and powerful customization options.
+
+## User Preferences
+- All texts should be in Spanish.
+- Use `data-testid` on all interactive elements.
+- Prefer Tailwind CSS for styling.
+- Utilize reusable Shadcn/UI components.
+
+## System Architecture
+
+### UI/UX Decisions
+The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailwind CSS for a modern, responsive design. The aesthetic is inspired by Material Design 3 and Linear, aiming for a professional and business-oriented look. The application's appearance (appName, logo, favicon, primary color) is highly customizable via an admin configuration page, with real-time previews and dynamic CSS variable updates.
+
+### Technical Implementations
+- **Dual Form Builder**:
+    - **Visual Mode**: Drag-and-drop interface with predefined fields.
+    - **Code Mode**: Live editor for custom HTML, CSS, and JavaScript with real-time preview.
+    - Toggle functionality to switch between modes, with auto-saving.
+- **Authentication**: Email/password authentication using Passport-local, `scrypt` for secure password hashing, and sessions stored in PostgreSQL via `connect-pg-simple`.
+- **Authorization**: Role-based access control with deployment-specific roles (`super_admin`, `admin_auto_host`, `visualizador_auto_host`, `cliente_saas`) and granular form-level permissions (Owner, Editor, Viewer).
+- **Data Export**: ExcelJS for exporting form responses to Excel.
+- **Real-time Analytics**: Customizable charts (bar, line, pie, area, scatter) with various aggregation types (count, sum, avg, min, max) powered by Recharts, applicable to both visual and code-based forms.
+  - Charts are created via ChartBuilder UI component
+  - ChartRenderer processes responses and normalizes data from both visual forms (answers.values) and code-mode forms (direct answers)
+  - Supports dynamic fields from responses and URL parameters
+  - Proper handling of array-valued fields (multi-select) and accurate average calculation
+- **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
+- **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
+- **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
+
+### Feature Specifications
+- **Deployment Modes**:
+    - **SaaS (default)**: Public registration enabled, full features, super-admin manages licenses for Auto-Host instances.
+    - **Auto-Host**: Requires initial setup wizard for admin creation, public registration blocked, license key required for unlimited forms (5-form limit without).
+- **Licensing System**: Licenses (`licenseKey`, `issuedToEmail`, `expiresAt`, `status`) are validated daily online against the SaaS instance, with a 3-day grace period for connectivity issues.
+- **Configurable Application Settings**: Admins can customize application name, logo URL, favicon URL, and primary color with real-time feedback.
+
+### System Design Choices
+- **Backend**: Express.js REST API.
+- **Frontend**: React with TypeScript, React Query for server state management, Wouter for routing.
+- **Database**: PostgreSQL with Drizzle ORM for type-safe schema definition and querying. All data, including sessions, is persisted in PostgreSQL.
+- **Security**: Passwords hashed with scrypt, httpOnly session cookies configured securely, robust backend role/permission validation, and input sanitization.
+
+## External Dependencies
+
+- **Database**: PostgreSQL
+- **Backend Framework**: Express.js
+- **ORM**: Drizzle ORM
+- **Authentication**: Passport-local, scrypt (for hashing), connect-pg-simple (for session storage)
+- **Frontend Framework**: React, TypeScript
+- **State Management (Frontend)**: React Query
+- **Routing (Frontend)**: Wouter
+- **UI Component Library/Styling**: Shadcn/UI, Tailwind CSS, Material Design 3 (aesthetic inspiration)
+- **Data Export**: ExcelJS
+- **Charting Library**: Recharts
+- **Form Validation (Frontend)**: React Hook Form, Zod
