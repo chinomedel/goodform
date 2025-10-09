@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { FileText, LogOut, Plus, LayoutDashboard, Users, Settings, Key } from "lucide-react";
+import { FileText, LogOut, Plus, LayoutDashboard, Users, Settings, Key, Brain } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +27,7 @@ const menuItems = [
 const adminMenuItems = [
   { title: "Usuarios", url: "/users", icon: Users },
   { title: "Configuración", url: "/settings", icon: Settings },
+  { title: "Configuración IA", url: "/ai-config", icon: Brain },
 ];
 
 const superAdminMenuItems = [
