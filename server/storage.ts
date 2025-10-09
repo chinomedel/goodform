@@ -8,6 +8,7 @@ import {
   appConfig,
   deployments,
   licenses,
+  charts,
   type User,
   type InsertUser,
   type Role,
@@ -26,6 +27,8 @@ import {
   type InsertDeployment,
   type License,
   type InsertLicense,
+  type Chart,
+  type InsertChart,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -99,6 +102,13 @@ export interface IStorage {
   
   // Form count for license validation
   countForms(userId?: string): Promise<number>;
+  
+  // Chart operations
+  createChart(chart: InsertChart): Promise<Chart>;
+  getChart(id: string): Promise<Chart | undefined>;
+  getFormCharts(formId: string): Promise<Chart[]>;
+  updateChart(id: string, data: Partial<InsertChart>): Promise<Chart>;
+  deleteChart(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -446,6 +456,34 @@ export class DatabaseStorage implements IStorage {
         .from(forms);
       return result[0]?.count || 0;
     }
+  }
+
+  // Chart operations
+  async createChart(chartData: InsertChart): Promise<Chart> {
+    const [chart] = await db.insert(charts).values(chartData).returning();
+    return chart;
+  }
+
+  async getChart(id: string): Promise<Chart | undefined> {
+    const [chart] = await db.select().from(charts).where(eq(charts.id, id));
+    return chart;
+  }
+
+  async getFormCharts(formId: string): Promise<Chart[]> {
+    return await db.select().from(charts).where(eq(charts.formId, formId)).orderBy(desc(charts.createdAt));
+  }
+
+  async updateChart(id: string, data: Partial<InsertChart>): Promise<Chart> {
+    const [chart] = await db
+      .update(charts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(charts.id, id))
+      .returning();
+    return chart;
+  }
+
+  async deleteChart(id: string): Promise<void> {
+    await db.delete(charts).where(eq(charts.id, id));
   }
 }
 

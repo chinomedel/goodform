@@ -9,6 +9,7 @@ import {
   insertFormPermissionSchema,
   insertFormResponseSchema,
   insertAppConfigSchema,
+  insertChartSchema,
 } from "@shared/schema";
 import ExcelJS from 'exceljs';
 import { isSelfHostedMode, hasValidLicense, isSetupCompleted, isSaasMode } from "./deployment";
@@ -907,6 +908,114 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error updating config:", error);
       res.status(400).json({ message: "Failed to update configuration" });
+    }
+  });
+
+  // Chart endpoints
+  app.post('/api/forms/:formId/charts', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const form = await storage.getForm(formId);
+      
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(formId, req.user.id);
+        if (!permission || permission.permission !== 'editor') {
+          return res.status(403).json({ message: "No tienes permisos para crear gráficos en este formulario" });
+        }
+      }
+
+      const chartData = insertChartSchema.parse({ ...req.body, formId });
+      const chart = await storage.createChart(chartData);
+      res.json(chart);
+    } catch (error) {
+      console.error("Error creating chart:", error);
+      res.status(400).json({ message: "Error al crear gráfico" });
+    }
+  });
+
+  app.get('/api/forms/:formId/charts', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const form = await storage.getForm(formId);
+      
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(formId, req.user.id);
+        if (!permission) {
+          return res.status(403).json({ message: "No tienes permisos para ver este formulario" });
+        }
+      }
+
+      const charts = await storage.getFormCharts(formId);
+      res.json(charts);
+    } catch (error) {
+      console.error("Error fetching charts:", error);
+      res.status(500).json({ message: "Error al obtener gráficos" });
+    }
+  });
+
+  app.patch('/api/charts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const chart = await storage.getChart(id);
+      
+      if (!chart) {
+        return res.status(404).json({ message: "Gráfico no encontrado" });
+      }
+
+      const form = await storage.getForm(chart.formId);
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(chart.formId, req.user.id);
+        if (!permission || permission.permission !== 'editor') {
+          return res.status(403).json({ message: "No tienes permisos para editar este gráfico" });
+        }
+      }
+
+      const updatedChart = await storage.updateChart(id, req.body);
+      res.json(updatedChart);
+    } catch (error) {
+      console.error("Error updating chart:", error);
+      res.status(400).json({ message: "Error al actualizar gráfico" });
+    }
+  });
+
+  app.delete('/api/charts/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const chart = await storage.getChart(id);
+      
+      if (!chart) {
+        return res.status(404).json({ message: "Gráfico no encontrado" });
+      }
+
+      const form = await storage.getForm(chart.formId);
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(chart.formId, req.user.id);
+        if (!permission || permission.permission !== 'editor') {
+          return res.status(403).json({ message: "No tienes permisos para eliminar este gráfico" });
+        }
+      }
+
+      await storage.deleteChart(id);
+      res.json({ message: "Gráfico eliminado exitosamente" });
+    } catch (error) {
+      console.error("Error deleting chart:", error);
+      res.status(500).json({ message: "Error al eliminar gráfico" });
     }
   });
 
