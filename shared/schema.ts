@@ -22,6 +22,8 @@ export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 's
 export const builderModeEnum = pgEnum('builder_mode', ['visual', 'code']);
 export const deploymentModeEnum = pgEnum('deployment_mode', ['saas', 'self-hosted']);
 export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 'expired']);
+export const chartTypeEnum = pgEnum('chart_type', ['bar', 'line', 'pie', 'area', 'scatter']);
+export const aggregationTypeEnum = pgEnum('aggregation_type', ['count', 'sum', 'avg', 'min', 'max']);
 
 // Session storage table - used by passport-local for session management
 export const sessions = pgTable(
@@ -137,6 +139,20 @@ export const licenses = pgTable("licenses", {
   deploymentInfo: jsonb("deployment_info"),
 });
 
+// Charts table - stores chart configurations for form analytics
+export const charts = pgTable("charts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: 'cascade' }),
+  title: varchar("title").notNull(),
+  chartType: chartTypeEnum("chart_type").notNull(),
+  xAxisField: varchar("x_axis_field").notNull(),
+  yAxisField: varchar("y_axis_field"),
+  aggregationType: aggregationTypeEnum("aggregation_type").notNull().default('count'),
+  filters: jsonb("filters"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const rolesRelations = relations(roles, ({ many }) => ({
   users: many(users),
@@ -160,6 +176,7 @@ export const formsRelations = relations(forms, ({ one, many }) => ({
   fields: many(formFields),
   permissions: many(formPermissions),
   responses: many(formResponses),
+  charts: many(charts),
 }));
 
 export const formFieldsRelations = relations(formFields, ({ one }) => ({
@@ -188,6 +205,13 @@ export const formResponsesRelations = relations(formResponses, ({ one }) => ({
   respondent: one(users, {
     fields: [formResponses.respondentId],
     references: [users.id],
+  }),
+}));
+
+export const chartsRelations = relations(charts, ({ one }) => ({
+  form: one(forms, {
+    fields: [charts.formId],
+    references: [forms.id],
   }),
 }));
 
@@ -259,3 +283,11 @@ export const insertLicenseSchema = createInsertSchema(licenses).omit({
 });
 export type InsertLicense = z.infer<typeof insertLicenseSchema>;
 export type License = typeof licenses.$inferSelect;
+
+export const insertChartSchema = createInsertSchema(charts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertChart = z.infer<typeof insertChartSchema>;
+export type Chart = typeof charts.$inferSelect;
