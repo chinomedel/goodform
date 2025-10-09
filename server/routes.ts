@@ -938,6 +938,18 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.get('/api/ai-config/keys-status', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      res.json({
+        openai: !!process.env.OPENAI_API_KEY,
+        deepseek: !!process.env.DEEPSEEK_API_KEY
+      });
+    } catch (error) {
+      console.error("Error checking API keys status:", error);
+      res.status(500).json({ message: "Error al verificar estado de API keys" });
+    }
+  });
+
   app.post('/api/ai-config/test/:provider', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const { provider } = req.params;

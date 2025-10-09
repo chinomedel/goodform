@@ -19,6 +19,10 @@ export default function AiConfigPage() {
     queryKey: ['/api/ai-config'],
   });
 
+  const { data: keysStatus } = useQuery<{ openai: boolean; deepseek: boolean }>({
+    queryKey: ['/api/ai-config/keys-status'],
+  });
+
   const updateConfigMutation = useMutation({
     mutationFn: async (provider: 'openai' | 'deepseek') => {
       const response = await apiRequest("PATCH", "/api/ai-config", { activeProvider: provider });
@@ -189,7 +193,7 @@ export default function AiConfigPage() {
               <div className="text-sm font-medium">OpenAI API Key</div>
             </div>
             <div className="flex items-center gap-2">
-              {process.env.OPENAI_API_KEY ? (
+              {keysStatus?.openai ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   <span className="text-sm text-muted-foreground">Configurada</span>
@@ -208,7 +212,7 @@ export default function AiConfigPage() {
               <div className="text-sm font-medium">Deepseek API Key</div>
             </div>
             <div className="flex items-center gap-2">
-              {process.env.DEEPSEEK_API_KEY ? (
+              {keysStatus?.deepseek ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   <span className="text-sm text-muted-foreground">Configurada</span>
