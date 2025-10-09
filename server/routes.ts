@@ -940,9 +940,10 @@ export function registerRoutes(app: Express): Server {
 
   app.get('/api/ai-config/keys-status', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
+      const config = await storage.getAiConfig();
       res.json({
-        openai: !!process.env.OPENAI_API_KEY,
-        deepseek: !!process.env.DEEPSEEK_API_KEY
+        openai: !!config.openaiApiKey || !!process.env.OPENAI_API_KEY,
+        deepseek: !!config.deepseekApiKey || !!process.env.DEEPSEEK_API_KEY
       });
     } catch (error) {
       console.error("Error checking API keys status:", error);
@@ -950,12 +951,32 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/ai-config/update-keys', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      const { openaiApiKey, deepseekApiKey } = req.body;
+      
+      await storage.updateAiApiKeys(openaiApiKey, deepseekApiKey);
+      
+      res.json({ 
+        success: true, 
+        message: "API keys actualizadas correctamente" 
+      });
+    } catch (error: any) {
+      console.error("Error updating API keys:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error al actualizar API keys: ${error.message}` 
+      });
+    }
+  });
+
   app.post('/api/ai-config/test/:provider', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
       const { provider } = req.params;
+      const keys = await storage.getDecryptedApiKeys();
 
       if (provider === 'openai') {
-        const apiKey = process.env.OPENAI_API_KEY;
+        const apiKey = keys.openai || process.env.OPENAI_API_KEY;
         if (!apiKey) {
           return res.status(400).json({ 
             success: false, 
@@ -987,7 +1008,7 @@ export function registerRoutes(app: Express): Server {
           });
         }
       } else if (provider === 'deepseek') {
-        const apiKey = process.env.DEEPSEEK_API_KEY;
+        const apiKey = keys.deepseek || process.env.DEEPSEEK_API_KEY;
         if (!apiKey) {
           return res.status(400).json({ 
             success: false, 
