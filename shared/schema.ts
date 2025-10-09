@@ -24,6 +24,7 @@ export const deploymentModeEnum = pgEnum('deployment_mode', ['saas', 'self-hoste
 export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 'expired']);
 export const chartTypeEnum = pgEnum('chart_type', ['bar', 'line', 'pie', 'area', 'scatter']);
 export const aggregationTypeEnum = pgEnum('aggregation_type', ['count', 'sum', 'avg', 'min', 'max']);
+export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'deepseek']);
 
 // Session storage table - used by passport-local for session management
 export const sessions = pgTable(
@@ -150,6 +151,13 @@ export const charts = pgTable("charts", {
   aggregationType: aggregationTypeEnum("aggregation_type").notNull().default('count'),
   filters: jsonb("filters"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Config table - stores AI provider configuration
+export const aiConfig = pgTable("ai_config", {
+  id: varchar("id").primaryKey().default('default'),
+  activeProvider: aiProviderEnum("active_provider").notNull().default('openai'),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
@@ -291,3 +299,10 @@ export const insertChartSchema = createInsertSchema(charts).omit({
 });
 export type InsertChart = z.infer<typeof insertChartSchema>;
 export type Chart = typeof charts.$inferSelect;
+
+export const insertAiConfigSchema = createInsertSchema(aiConfig).omit({
+  id: true,
+  updatedAt: true,
+});
+export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
+export type AiConfig = typeof aiConfig.$inferSelect;
