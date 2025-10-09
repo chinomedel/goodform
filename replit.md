@@ -45,6 +45,17 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
     - PATCH `/api/charts/:id` - Actualizar gráfico existente
     - DELETE `/api/charts/:id` - Eliminar gráfico
     - GET `/api/forms/:formId/charts` - Obtener todos los gráficos de un formulario
+- **AI Integration**: Support for multiple AI providers (OpenAI and Deepseek) configurable through an admin interface.
+  - **AI Configuration Page**: Admin-only page (`/ai-config`) for managing AI providers
+    - Provider selection: Choose between OpenAI (GPT-3.5, GPT-4, GPT-5) or Deepseek
+    - API Key testing: Test connections to verify API keys are working
+    - Active provider indicator: Visual badge showing which provider is currently active
+    - Secure key management: API keys stored as Replit Secrets (OPENAI_API_KEY, DEEPSEEK_API_KEY)
+  - **API Endpoints**:
+    - GET `/api/ai-config` - Retrieve current AI configuration
+    - PATCH `/api/ai-config` - Update active provider (admin only)
+    - POST `/api/ai-config/test/:provider` - Test API connection for a specific provider
+  - Database: `ai_config` table stores active provider preference
 - **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
 - **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
 - **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
@@ -75,3 +86,4 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 - **Data Export**: ExcelJS
 - **Charting Library**: Recharts
 - **Form Validation (Frontend)**: React Hook Form, Zod
+- **AI Integration**: OpenAI (GPT models), Deepseek (Chat models)
