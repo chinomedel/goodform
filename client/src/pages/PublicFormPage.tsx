@@ -1,5 +1,5 @@
 import { useParams } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getPublicForm, submitPublicForm } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -91,6 +91,12 @@ export default function PublicFormPage() {
     submitMutation.mutate();
   };
 
+  // Use ref to keep urlParams up to date without re-running the effect
+  const urlParamsRef = useRef(urlParams);
+  useEffect(() => {
+    urlParamsRef.current = urlParams;
+  }, [urlParams]);
+
   // Expose submit function and execute custom JS for code-mode forms
   useEffect(() => {
     if (form?.builderMode === 'code' && typeof window !== 'undefined') {
@@ -100,7 +106,7 @@ export default function PublicFormPage() {
           const response = await submitPublicForm(id!, { 
             answers: formData, 
             email: formData.email || '',
-            urlParams
+            urlParams: urlParamsRef.current
           });
           
           setSubmitted(true);
@@ -120,16 +126,27 @@ export default function PublicFormPage() {
         }
       };
 
-      // Execute custom JavaScript
+      // Execute custom JavaScript only once
       if (form.customJs) {
         try {
+          const scriptId = 'custom-form-script';
+          // Remove existing script if any
+          const existingScript = document.getElementById(scriptId);
+          if (existingScript) {
+            existingScript.remove();
+          }
+          
           const script = document.createElement('script');
+          script.id = scriptId;
           script.textContent = form.customJs;
           document.body.appendChild(script);
           
           // Cleanup
           return () => {
-            document.body.removeChild(script);
+            const scriptToRemove = document.getElementById(scriptId);
+            if (scriptToRemove) {
+              scriptToRemove.remove();
+            }
             delete (window as any).submitCustomForm;
           };
         } catch (error) {
@@ -137,7 +154,7 @@ export default function PublicFormPage() {
         }
       }
     }
-  }, [form, id, toast, urlParams]);
+  }, [form, id, toast]);
 
   if (isLoading) {
     return (
