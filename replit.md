@@ -48,14 +48,21 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 - **AI Integration**: Support for multiple AI providers (OpenAI and Deepseek) configurable through an admin interface.
   - **AI Configuration Page**: Admin-only page (`/ai-config`) for managing AI providers
     - Provider selection: Choose between OpenAI (GPT-3.5, GPT-4, GPT-5) or Deepseek
+    - API Key management: Secure form to input and update API keys directly from the web interface
     - API Key testing: Test connections to verify API keys are working
     - Active provider indicator: Visual badge showing which provider is currently active
-    - Secure key management: API keys stored as Replit Secrets (OPENAI_API_KEY, DEEPSEEK_API_KEY)
+    - **Secure key storage**: API keys stored encrypted in PostgreSQL database using AES-256-CBC encryption
+      - Keys never exposed to frontend (password input fields)
+      - Encryption key derived from DATABASE_URL or ENCRYPTION_KEY environment variable
+      - Fallback support for Replit Secrets (OPENAI_API_KEY, DEEPSEEK_API_KEY)
   - **API Endpoints**:
     - GET `/api/ai-config` - Retrieve current AI configuration
     - PATCH `/api/ai-config` - Update active provider (admin only)
+    - POST `/api/ai-config/update-keys` - Update and encrypt API keys (admin only)
+    - GET `/api/ai-config/keys-status` - Check if keys are configured (admin only)
     - POST `/api/ai-config/test/:provider` - Test API connection for a specific provider
-  - Database: `ai_config` table stores active provider preference
+  - Database: `ai_config` table stores active provider preference and encrypted API keys
+  - Security: Crypto utilities (server/crypto-utils.ts) handle encryption/decryption using Node.js crypto module
 - **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
 - **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
 - **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
