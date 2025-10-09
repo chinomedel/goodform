@@ -23,7 +23,7 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 - **Authorization**: Role-based access control with deployment-specific roles (`super_admin`, `admin_auto_host`, `visualizador_auto_host`, `cliente_saas`) and granular form-level permissions (Owner, Editor, Viewer).
 - **Data Export**: ExcelJS for exporting form responses to Excel.
 - **Real-time Analytics y Análisis Cruzado**: Customizable charts (bar, line, pie, area, scatter) with various aggregation types (count, sum, avg, min, max) powered by Recharts, applicable to both visual and code-based forms.
-  - **ChartBuilder UI**: Constructor de gráficos con soporte para análisis cruzado
+  - **ChartBuilder UI**: Constructor de gráficos con soporte para análisis cruzado y edición completa
     - Campo "Agrupar por (Eje X)": Selecciona el campo por el cual agrupar datos (ej: origen, región, categoría)
     - Campo "Tipo de Agregación": Selecciona cómo agregar los datos
       - "Contar ocurrencias": Cuenta cuántas respuestas hay por cada valor del eje X
@@ -31,6 +31,7 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
       - "Promedio de valores": Calcula el promedio de un campo numérico por cada grupo
       - "Valor mínimo/máximo": Encuentra el min/max de un campo numérico por cada grupo
     - Campo "Campo a Analizar (Eje Y)": **Aparece automáticamente** cuando se selecciona suma/promedio/min/max. Permite seleccionar qué campo numérico se debe agregar.
+    - **Funcionalidad de Edición**: Los gráficos existentes pueden editarse haciendo clic en el botón de editar (ícono de lápiz) en cada gráfico. El diálogo ChartBuilder se abre pre-llenado con la configuración actual.
   - **Ejemplo de Análisis Cruzado**: "Promedio de NPS por Origen"
     - Eje X (Agrupar por): "origen" 
     - Agregación: "Promedio de valores"
@@ -39,6 +40,11 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
   - ChartRenderer procesa respuestas y normaliza datos de formularios visuales (answers.values) y de código (answers directos)
   - Soporta campos dinámicos extraídos de respuestas y parámetros URL
   - Manejo correcto de campos con valores array (multi-select) y cálculo preciso de promedios
+  - **API de Gráficos**:
+    - POST `/api/forms/:formId/charts` - Crear nuevo gráfico
+    - PATCH `/api/charts/:id` - Actualizar gráfico existente
+    - DELETE `/api/charts/:id` - Eliminar gráfico
+    - GET `/api/forms/:formId/charts` - Obtener todos los gráficos de un formulario
 - **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
 - **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
 - **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
