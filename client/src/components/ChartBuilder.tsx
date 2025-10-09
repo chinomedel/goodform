@@ -46,17 +46,19 @@ type ChartFormData = z.infer<typeof chartFormSchema>;
 interface ChartBuilderProps {
   formId: string;
   fields: FormFieldType[];
+  dynamicFields?: string[];
   urlParams?: string[];
   children?: React.ReactNode;
 }
 
-export default function ChartBuilder({ formId, fields, urlParams = [], children }: ChartBuilderProps) {
+export default function ChartBuilder({ formId, fields, dynamicFields = [], urlParams = [], children }: ChartBuilderProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  // Combinar campos del formulario y parámetros URL
+  // Combinar campos del formulario, campos dinámicos y parámetros URL
   const allFields = [
-    ...fields.map(f => ({ value: f.label, label: f.label, type: f.type })),
+    ...fields.map(f => ({ value: f.id, label: f.label, type: f.type })),
+    ...dynamicFields.map(df => ({ value: df, label: df, type: 'text' })),
     ...urlParams.map(p => ({ value: p, label: p, type: 'text' }))
   ];
 

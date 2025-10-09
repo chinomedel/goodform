@@ -227,6 +227,7 @@ export default function FormResponsesPage() {
             <ChartBuilder
               formId={id!}
               fields={form.fields || []}
+              dynamicFields={dynamicColumns}
               urlParams={urlParamColumns}
             />
           </div>
