@@ -9,6 +9,7 @@ import {
   deployments,
   licenses,
   charts,
+  aiConfig,
   type User,
   type InsertUser,
   type Role,
@@ -29,6 +30,8 @@ import {
   type InsertLicense,
   type Chart,
   type InsertChart,
+  type AiConfig,
+  type InsertAiConfig,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -109,6 +112,10 @@ export interface IStorage {
   getFormCharts(formId: string): Promise<Chart[]>;
   updateChart(id: string, data: Partial<InsertChart>): Promise<Chart>;
   deleteChart(id: string): Promise<void>;
+  
+  // AI Config operations
+  getAiConfig(): Promise<AiConfig>;
+  updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -484,6 +491,28 @@ export class DatabaseStorage implements IStorage {
 
   async deleteChart(id: string): Promise<void> {
     await db.delete(charts).where(eq(charts.id, id));
+  }
+
+  // AI Config operations
+  async getAiConfig(): Promise<AiConfig> {
+    const [config] = await db.select().from(aiConfig).where(eq(aiConfig.id, 'default'));
+    
+    if (!config) {
+      // Create default config if it doesn't exist
+      const [newConfig] = await db.insert(aiConfig).values({ id: 'default' }).returning();
+      return newConfig;
+    }
+    
+    return config;
+  }
+
+  async updateAiConfig(configData: Partial<InsertAiConfig>): Promise<AiConfig> {
+    const [config] = await db
+      .update(aiConfig)
+      .set({ ...configData, updatedAt: new Date() })
+      .where(eq(aiConfig.id, 'default'))
+      .returning();
+    return config;
   }
 }
 
