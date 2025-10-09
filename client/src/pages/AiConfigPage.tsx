@@ -3,17 +3,20 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, Loader2, FlaskConical } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, FlaskConical, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { AiConfig } from "@shared/schema";
 
 export default function AiConfigPage() {
   const { toast } = useToast();
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [deepseekKey, setDeepseekKey] = useState("");
 
   const { data: aiConfig, isLoading } = useQuery<AiConfig>({
     queryKey: ['/api/ai-config'],
@@ -68,9 +71,49 @@ export default function AiConfigPage() {
     },
   });
 
+  const updateKeysMutation = useMutation({
+    mutationFn: async (data: { openaiApiKey?: string; deepseekApiKey?: string }) => {
+      const response = await apiRequest("POST", "/api/ai-config/update-keys", data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/ai-config/keys-status'] });
+      setOpenaiKey("");
+      setDeepseekKey("");
+      toast({
+        title: "API Keys actualizadas",
+        description: "Las API keys han sido guardadas de forma segura",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudieron actualizar las API keys",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleTest = (provider: string) => {
     setTestingProvider(provider);
     testProviderMutation.mutate(provider);
+  };
+
+  const handleSaveKeys = () => {
+    const data: any = {};
+    if (openaiKey.trim()) data.openaiApiKey = openaiKey.trim();
+    if (deepseekKey.trim()) data.deepseekApiKey = deepseekKey.trim();
+    
+    if (Object.keys(data).length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Ingresa al menos una API key para guardar",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateKeysMutation.mutate(data);
   };
 
   if (isLoading) {
@@ -173,10 +216,72 @@ export default function AiConfigPage() {
 
           <Alert>
             <AlertDescription className="text-sm">
-              <strong>Nota:</strong> Las API keys se configuran de forma segura a través de las variables de entorno.
-              Asegúrate de tener configuradas OPENAI_API_KEY y DEEPSEEK_API_KEY en los secretos de Replit.
+              <strong>Nota:</strong> Selecciona el proveedor que deseas usar y configura sus API keys a continuación.
             </AlertDescription>
           </Alert>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Configurar API Keys</CardTitle>
+          <CardDescription>
+            Ingresa las API keys para los proveedores de IA. Se almacenarán de forma segura encriptadas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="openai-key">OpenAI API Key</Label>
+            <div className="flex gap-2">
+              <Input
+                id="openai-key"
+                type="password"
+                placeholder="sk-..."
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                data-testid="input-openai-key"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Obtén tu API key en <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">platform.openai.com</a>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="deepseek-key">Deepseek API Key</Label>
+            <div className="flex gap-2">
+              <Input
+                id="deepseek-key"
+                type="password"
+                placeholder="sk-..."
+                value={deepseekKey}
+                onChange={(e) => setDeepseekKey(e.target.value)}
+                data-testid="input-deepseek-key"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Obtén tu API key en <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="underline">platform.deepseek.com</a>
+            </p>
+          </div>
+
+          <Button
+            onClick={handleSaveKeys}
+            disabled={updateKeysMutation.isPending}
+            className="w-full"
+            data-testid="button-save-keys"
+          >
+            {updateKeysMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Guardar API Keys
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
