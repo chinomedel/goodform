@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { FormField as FormFieldType } from "@shared/schema";
+import type { FormField as FormFieldType, Chart } from "@shared/schema";
 
 const chartFormSchema = z.object({
   title: z.string().min(1, "El título es requerido"),
@@ -57,12 +57,14 @@ interface ChartBuilderProps {
   fields: FormFieldType[];
   dynamicFields?: string[];
   urlParams?: string[];
+  chart?: Chart;
   children?: React.ReactNode;
 }
 
-export default function ChartBuilder({ formId, fields, dynamicFields = [], urlParams = [], children }: ChartBuilderProps) {
+export default function ChartBuilder({ formId, fields, dynamicFields = [], urlParams = [], chart, children }: ChartBuilderProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const isEditing = !!chart;
 
   // Combinar campos del formulario, campos dinámicos y parámetros URL
   const allFields = [
@@ -74,39 +76,61 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
   const form = useForm<ChartFormData>({
     resolver: zodResolver(chartFormSchema),
     defaultValues: {
-      title: "",
-      chartType: "bar",
-      xAxisField: "",
-      yAxisField: "",
-      aggregationType: "count",
+      title: chart?.title || "",
+      chartType: chart?.chartType || "bar",
+      xAxisField: chart?.xAxisField || "",
+      yAxisField: chart?.yAxisField || "",
+      aggregationType: chart?.aggregationType || "count",
     },
   });
 
-  const createChartMutation = useMutation({
+  // Actualizar valores del formulario cuando cambia el chart
+  useEffect(() => {
+    if (chart) {
+      form.reset({
+        title: chart.title,
+        chartType: chart.chartType,
+        xAxisField: chart.xAxisField,
+        yAxisField: chart.yAxisField || "",
+        aggregationType: chart.aggregationType,
+      });
+    }
+  }, [chart, form]);
+
+  const saveChartMutation = useMutation({
     mutationFn: async (data: ChartFormData) => {
-      const response = await apiRequest("POST", `/api/forms/${formId}/charts`, data);
-      return await response.json();
+      if (isEditing) {
+        const response = await apiRequest("PATCH", `/api/charts/${chart.id}`, data);
+        return await response.json();
+      } else {
+        const response = await apiRequest("POST", `/api/forms/${formId}/charts`, data);
+        return await response.json();
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/forms', formId, 'charts'] });
       toast({
-        title: "Gráfico creado",
-        description: "El gráfico se ha creado exitosamente",
+        title: isEditing ? "Gráfico actualizado" : "Gráfico creado",
+        description: isEditing 
+          ? "El gráfico se ha actualizado exitosamente"
+          : "El gráfico se ha creado exitosamente",
       });
       setOpen(false);
-      form.reset();
+      if (!isEditing) {
+        form.reset();
+      }
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "No se pudo crear el gráfico",
+        description: error.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} el gráfico`,
         variant: "destructive",
       });
     },
   });
 
   const onSubmit = (data: ChartFormData) => {
-    createChartMutation.mutate(data);
+    saveChartMutation.mutate(data);
   };
 
   return (
@@ -121,9 +145,12 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
       </DialogTrigger>
       <DialogContent className="max-w-2xl" data-testid="dialog-chart-builder">
         <DialogHeader>
-          <DialogTitle>Crear Nuevo Gráfico</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Gráfico' : 'Crear Nuevo Gráfico'}</DialogTitle>
           <DialogDescription>
-            Crea visualizaciones y análisis cruzados de tus datos. Por ejemplo: "Promedio de NPS por Origen"
+            {isEditing 
+              ? 'Modifica la configuración de tu gráfico'
+              : 'Crea visualizaciones y análisis cruzados de tus datos. Por ejemplo: "Promedio de NPS por Origen"'
+            }
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -259,13 +286,13 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
               </Button>
               <Button
                 type="submit"
-                disabled={createChartMutation.isPending}
+                disabled={saveChartMutation.isPending}
                 data-testid="button-save-chart"
               >
-                {createChartMutation.isPending && (
+                {saveChartMutation.isPending && (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
-                Crear Gráfico
+                {isEditing ? 'Actualizar Gráfico' : 'Crear Gráfico'}
               </Button>
             </div>
           </form>
