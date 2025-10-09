@@ -58,10 +58,11 @@ interface ChartBuilderProps {
   dynamicFields?: string[];
   urlParams?: string[];
   chart?: Chart;
+  onClose?: () => void;
   children?: React.ReactNode;
 }
 
-export default function ChartBuilder({ formId, fields, dynamicFields = [], urlParams = [], chart, children }: ChartBuilderProps) {
+export default function ChartBuilder({ formId, fields, dynamicFields = [], urlParams = [], chart, onClose, children }: ChartBuilderProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const isEditing = !!chart;
@@ -94,6 +95,7 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
         yAxisField: chart.yAxisField || "",
         aggregationType: chart.aggregationType,
       });
+      setOpen(true); // Abrir el diálogo automáticamente cuando hay un chart para editar
     }
   }, [chart, form]);
 
@@ -133,8 +135,15 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
     saveChartMutation.mutate(data);
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen && onClose) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {children || (
           <Button variant="outline" data-testid="button-create-chart">

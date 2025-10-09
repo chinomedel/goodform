@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getForm, getFormResponses, getExportUrl } from "@/lib/api";
@@ -17,6 +18,7 @@ import type { Chart } from "@shared/schema";
 export default function FormResponsesPage() {
   const { id } = useParams();
   const { toast } = useToast();
+  const [editingChart, setEditingChart] = useState<Chart | undefined>(undefined);
 
   const { data: form, isLoading: isLoadingForm } = useQuery({
     queryKey: ['/api/forms', id],
@@ -229,6 +231,8 @@ export default function FormResponsesPage() {
               fields={form.fields || []}
               dynamicFields={dynamicColumns}
               urlParams={urlParamColumns}
+              chart={editingChart}
+              onClose={() => setEditingChart(undefined)}
             />
           </div>
           
@@ -243,6 +247,7 @@ export default function FormResponsesPage() {
                   key={chart.id}
                   chart={chart}
                   responses={responses || []}
+                  onEdit={(chart) => setEditingChart(chart)}
                   onDelete={(chartId) => deleteChartMutation.mutate(chartId)}
                 />
               ))}

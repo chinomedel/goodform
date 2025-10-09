@@ -20,18 +20,19 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import type { Chart, FormResponse } from "@shared/schema";
 
 interface ChartRendererProps {
   chart: Chart;
   responses: FormResponse[];
+  onEdit?: (chart: Chart) => void;
   onDelete?: (chartId: string) => void;
 }
 
 const COLORS = ['#f97316', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'];
 
-export default function ChartRenderer({ chart, responses, onDelete }: ChartRendererProps) {
+export default function ChartRenderer({ chart, responses, onEdit, onDelete }: ChartRendererProps) {
   const chartData = useMemo(() => {
     const dataMap = new Map<string, number>();
     const countMap = new Map<string, number>(); // Para calcular promedio correctamente
@@ -189,16 +190,28 @@ export default function ChartRenderer({ chart, responses, onDelete }: ChartRende
     <Card data-testid={`chart-${chart.id}`}>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-lg" data-testid="text-chart-title">{chart.title}</CardTitle>
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(chart.id)}
-            data-testid={`button-delete-chart-${chart.id}`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
+        <div className="flex gap-1">
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onEdit(chart)}
+              data-testid={`button-edit-chart-${chart.id}`}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onDelete(chart.id)}
+              data-testid={`button-delete-chart-${chart.id}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
