@@ -158,6 +158,8 @@ export const charts = pgTable("charts", {
 export const aiConfig = pgTable("ai_config", {
   id: varchar("id").primaryKey().default('default'),
   activeProvider: aiProviderEnum("active_provider").notNull().default('openai'),
+  openaiApiKey: text("openai_api_key"),
+  deepseekApiKey: text("deepseek_api_key"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

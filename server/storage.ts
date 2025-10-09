@@ -116,6 +116,8 @@ export interface IStorage {
   // AI Config operations
   getAiConfig(): Promise<AiConfig>;
   updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
+  updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig>;
+  getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -513,6 +515,39 @@ export class DatabaseStorage implements IStorage {
       .where(eq(aiConfig.id, 'default'))
       .returning();
     return config;
+  }
+
+  async updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig> {
+    const { encrypt } = await import('./crypto-utils');
+    
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (openaiKey !== undefined) {
+      updateData.openaiApiKey = openaiKey ? encrypt(openaiKey) : null;
+    }
+    
+    if (deepseekKey !== undefined) {
+      updateData.deepseekApiKey = deepseekKey ? encrypt(deepseekKey) : null;
+    }
+    
+    const [config] = await db
+      .update(aiConfig)
+      .set(updateData)
+      .where(eq(aiConfig.id, 'default'))
+      .returning();
+    
+    return config;
+  }
+
+  async getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }> {
+    const { decrypt } = await import('./crypto-utils');
+    
+    const config = await this.getAiConfig();
+    
+    return {
+      openai: config.openaiApiKey ? decrypt(config.openaiApiKey) : undefined,
+      deepseek: config.deepseekApiKey ? decrypt(config.deepseekApiKey) : undefined,
+    };
   }
 }
 
