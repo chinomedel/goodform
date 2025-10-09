@@ -911,6 +911,119 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // AI Configuration endpoints
+  app.get('/api/ai-config', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      const config = await storage.getAiConfig();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching AI config:", error);
+      res.status(500).json({ message: "Error al obtener configuración de IA" });
+    }
+  });
+
+  app.patch('/api/ai-config', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      const { activeProvider } = req.body;
+      
+      if (!activeProvider || !['openai', 'deepseek'].includes(activeProvider)) {
+        return res.status(400).json({ message: "Proveedor de IA inválido" });
+      }
+
+      const updatedConfig = await storage.updateAiConfig({ activeProvider });
+      res.json(updatedConfig);
+    } catch (error) {
+      console.error("Error updating AI config:", error);
+      res.status(500).json({ message: "Error al actualizar configuración de IA" });
+    }
+  });
+
+  app.post('/api/ai-config/test/:provider', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      const { provider } = req.params;
+
+      if (provider === 'openai') {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "OPENAI_API_KEY no está configurada" 
+          });
+        }
+
+        try {
+          // Test connection with a simple completion
+          const OpenAI = (await import('openai')).default;
+          const openai = new OpenAI({ apiKey });
+          
+          const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: "Responde solo con 'OK'" }],
+            max_tokens: 10,
+          });
+
+          const testResult = response.choices[0]?.message?.content;
+          return res.json({ 
+            success: true, 
+            message: "Conexión exitosa con OpenAI",
+            details: `Respuesta del modelo: ${testResult}`
+          });
+        } catch (error: any) {
+          return res.status(500).json({ 
+            success: false, 
+            message: `Error al conectar con OpenAI: ${error.message}` 
+          });
+        }
+      } else if (provider === 'deepseek') {
+        const apiKey = process.env.DEEPSEEK_API_KEY;
+        if (!apiKey) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "DEEPSEEK_API_KEY no está configurada" 
+          });
+        }
+
+        try {
+          // Test connection with Deepseek API (compatible with OpenAI format)
+          const OpenAI = (await import('openai')).default;
+          const deepseek = new OpenAI({ 
+            apiKey,
+            baseURL: 'https://api.deepseek.com/v1'
+          });
+          
+          const response = await deepseek.chat.completions.create({
+            model: "deepseek-chat",
+            messages: [{ role: "user", content: "Responde solo con 'OK'" }],
+            max_tokens: 10,
+          });
+
+          const testResult = response.choices[0]?.message?.content;
+          return res.json({ 
+            success: true, 
+            message: "Conexión exitosa con Deepseek",
+            details: `Respuesta del modelo: ${testResult}`
+          });
+        } catch (error: any) {
+          return res.status(500).json({ 
+            success: false, 
+            message: `Error al conectar con Deepseek: ${error.message}` 
+          });
+        }
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Proveedor no soportado" 
+        });
+      }
+    } catch (error: any) {
+      console.error("Error testing AI provider:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error al probar conexión: ${error.message}` 
+      });
+    }
+  });
+
   // Chart endpoints
   app.post('/api/forms/:formId/charts', isAuthenticated, async (req: any, res) => {
     try {
