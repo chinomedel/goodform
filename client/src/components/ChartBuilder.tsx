@@ -36,9 +36,18 @@ import type { FormField as FormFieldType } from "@shared/schema";
 const chartFormSchema = z.object({
   title: z.string().min(1, "El título es requerido"),
   chartType: z.enum(["bar", "line", "pie", "area", "scatter"]),
-  xAxisField: z.string().min(1, "Selecciona un campo para el eje X"),
+  xAxisField: z.string().min(1, "Selecciona un campo para agrupar"),
   yAxisField: z.string().optional(),
   aggregationType: z.enum(["count", "sum", "avg", "min", "max"]),
+}).refine((data) => {
+  // Si aggregationType no es "count", yAxisField es requerido
+  if (data.aggregationType !== "count" && !data.yAxisField) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Debes seleccionar un campo para analizar cuando usas suma, promedio, mínimo o máximo",
+  path: ["yAxisField"],
 });
 
 type ChartFormData = z.infer<typeof chartFormSchema>;
@@ -114,7 +123,7 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
         <DialogHeader>
           <DialogTitle>Crear Nuevo Gráfico</DialogTitle>
           <DialogDescription>
-            Configura un gráfico para visualizar los datos de tu formulario
+            Crea visualizaciones y análisis cruzados de tus datos. Por ejemplo: "Promedio de NPS por Origen"
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -167,11 +176,11 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
               name="xAxisField"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Campo para Eje X / Categoría</FormLabel>
+                  <FormLabel>Agrupar por (Eje X)</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-x-axis">
-                        <SelectValue placeholder="Selecciona un campo" />
+                        <SelectValue placeholder="Selecciona el campo de agrupación" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -200,17 +209,44 @@ export default function ChartBuilder({ formId, fields, dynamicFields = [], urlPa
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="count" data-testid="option-count">Contar</SelectItem>
-                      <SelectItem value="sum" data-testid="option-sum">Sumar</SelectItem>
-                      <SelectItem value="avg" data-testid="option-avg">Promedio</SelectItem>
-                      <SelectItem value="min" data-testid="option-min">Mínimo</SelectItem>
-                      <SelectItem value="max" data-testid="option-max">Máximo</SelectItem>
+                      <SelectItem value="count" data-testid="option-count">Contar ocurrencias</SelectItem>
+                      <SelectItem value="sum" data-testid="option-sum">Sumar valores</SelectItem>
+                      <SelectItem value="avg" data-testid="option-avg">Promedio de valores</SelectItem>
+                      <SelectItem value="min" data-testid="option-min">Valor mínimo</SelectItem>
+                      <SelectItem value="max" data-testid="option-max">Valor máximo</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {form.watch("aggregationType") !== "count" && (
+              <FormField
+                control={form.control}
+                name="yAxisField"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campo a Analizar (Eje Y)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-y-axis">
+                          <SelectValue placeholder="Selecciona el campo numérico" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {allFields.map((f) => (
+                          <SelectItem key={f.value} value={f.value} data-testid={`option-y-${f.value}`}>
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button
