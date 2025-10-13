@@ -144,8 +144,17 @@ export function setupAuth(app: Express) {
       if (!user) {
         return res.status(401).json({ message: info?.message || "Credenciales inválidas" });
       }
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) return next(err);
+        
+        // Create login log
+        try {
+          await storage.createLoginLog({ userId: user.id });
+        } catch (logError) {
+          console.error('Error al crear log de inicio de sesión:', logError);
+          // No interrumpir el flujo de login si falla el log
+        }
+        
         const { password: _, ...userWithoutPassword } = user;
         res.status(200).json(userWithoutPassword);
       });
