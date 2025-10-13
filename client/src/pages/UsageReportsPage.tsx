@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function UsageReportsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: isLoadingAuth } = useAuth();
 
   // Check if user is admin (super_admin or admin_auto_host)
   const isAdmin = user?.isSuperAdmin || user?.roleId === 'admin_auto_host' || user?.roleId === 'super_admin';
@@ -21,7 +21,8 @@ export default function UsageReportsPage() {
       });
       if (!res.ok) throw new Error("Error al obtener estadísticas de inicio de sesión");
       return res.json();
-    }
+    },
+    enabled: isAdmin, // Only fetch if user is admin
   });
 
   const { data: passwordResetStats, isLoading: isLoadingResets } = useQuery<{ date: string; count: number }[]>({
@@ -32,12 +33,20 @@ export default function UsageReportsPage() {
       });
       if (!res.ok) throw new Error("Error al obtener estadísticas de recuperación de contraseñas");
       return res.json();
-    }
+    },
+    enabled: isAdmin, // Only fetch if user is admin
   });
 
-  const isLoading = isLoadingLogins || isLoadingResets;
+  // Show loading while auth is being verified
+  if (isLoadingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" data-testid="loading-auth" />
+      </div>
+    );
+  }
 
-  // Check authorization first
+  // Check authorization after auth is loaded
   if (!isAdmin) {
     return (
       <div className="container mx-auto p-6">
@@ -51,6 +60,8 @@ export default function UsageReportsPage() {
       </div>
     );
   }
+
+  const isLoading = isLoadingLogins || isLoadingResets;
 
   // Format data for charts
   const loginChartData = loginStats?.map(stat => ({
