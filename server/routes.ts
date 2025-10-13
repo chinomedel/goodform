@@ -1503,7 +1503,23 @@ Responde en español de manera clara y concisa.`;
       });
     } catch (error: any) {
       console.error("Error in chat endpoint:", error);
-      res.status(500).json({ message: `Error: ${error.message}` });
+      
+      // Mensajes de error más específicos
+      let errorMessage = "Error al procesar tu mensaje";
+      
+      if (error.message?.includes('API key')) {
+        errorMessage = "La clave API no es válida. Por favor verifica la configuración.";
+      } else if (error.message?.includes('rate limit')) {
+        errorMessage = "Se alcanzó el límite de solicitudes. Por favor intenta más tarde.";
+      } else if (error.message?.includes('insufficient_quota')) {
+        errorMessage = "La cuenta de IA no tiene créditos suficientes.";
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        errorMessage = "No se pudo conectar con el servicio de IA. Verifica tu conexión.";
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      res.status(500).json({ message: errorMessage });
     }
   });
 
