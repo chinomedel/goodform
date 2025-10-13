@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { FileText, LogOut, Plus, LayoutDashboard, Users, Settings, Key, Brain, Mail } from "lucide-react";
+import { FileText, LogOut, Plus, LayoutDashboard, Users, Settings, Key, Brain, Mail, BarChart3 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +29,10 @@ const adminMenuItems = [
   { title: "Diseño Aplicación", url: "/design-settings", icon: Settings },
   { title: "Configuración IA", url: "/ai-config", icon: Brain },
   { title: "Configuración SMTP", url: "/smtp-config", icon: Mail },
+];
+
+const reportsMenuItems = [
+  { title: "Uso Aplicación", url: "/reports/usage", icon: BarChart3 },
 ];
 
 const superAdminMenuItems = [
@@ -126,6 +130,26 @@ export function AppSidebar({ userRole = "cliente_saas" }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <Link href={item.url} data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {(user?.roleId === "admin_auto_host" || user?.roleId === "super_admin" || user?.isSuperAdmin) && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Reportes</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {reportsMenuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <Link href={item.url} data-testid={`link-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
