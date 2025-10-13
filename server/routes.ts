@@ -94,19 +94,28 @@ async function checkFormLimit(req: any, res: any, next: any) {
 // Helper to check if user can access form
 async function canAccessForm(formId: string, userId: string): Promise<boolean> {
   const form = await storage.getForm(formId);
+  console.log(`[canAccessForm] formId=${formId}, form found=${!!form}, creatorId=${form?.creatorId}`);
   if (!form) return false;
 
   const user = await storage.getUser(userId);
+  console.log(`[canAccessForm] userId=${userId}, user found=${!!user}, roleId=${user?.roleId}`);
   if (!user) return false;
 
   // Admin can access everything
-  if (isUserAdmin(user)) return true;
+  if (isUserAdmin(user)) {
+    console.log(`[canAccessForm] User is admin, access granted`);
+    return true;
+  }
 
   // Creator can access their own forms
-  if (form.creatorId === userId) return true;
+  if (form.creatorId === userId) {
+    console.log(`[canAccessForm] User is creator, access granted`);
+    return true;
+  }
 
   // Check if user has explicit permission
   const permission = await storage.getUserFormPermission(formId, userId);
+  console.log(`[canAccessForm] Permission check=${!!permission}`);
   return !!permission;
 }
 
@@ -279,8 +288,13 @@ export function registerRoutes(app: Express): Server {
       const { id } = req.params;
       const userId = req.user.id;
 
+      console.log(`[GET /api/forms/:id] formId=${id}, userId=${userId}`);
+
       // Check permission
-      if (!await canAccessForm(id, userId)) {
+      const hasAccess = await canAccessForm(id, userId);
+      console.log(`[GET /api/forms/:id] canAccessForm returned ${hasAccess}`);
+      
+      if (!hasAccess) {
         return res.status(403).json({ message: "Not authorized to access this form" });
       }
 

@@ -60,6 +60,7 @@ function AuthenticatedApp() {
               <Route path="/builder" component={FormBuilderPage} />
               <Route path="/builder/:id" component={FormBuilderPage} />
               <Route path="/responses/:id" component={FormResponsesPage} />
+              <Route path="/forms/:id/responses" component={FormResponsesPage} />
               <Route path="/preview/:id" component={PreviewFormPage} />
               <Route path="/users" component={UsersPage} />
               <Route path="/settings" component={SettingsPage} />
@@ -88,6 +89,7 @@ function Router() {
       <ProtectedRoute path="/builder" component={AuthenticatedApp} />
       <ProtectedRoute path="/builder/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/responses/:id" component={AuthenticatedApp} />
+      <ProtectedRoute path="/forms/:id/responses" component={AuthenticatedApp} />
       <ProtectedRoute path="/preview/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/users" component={AuthenticatedApp} />
       <ProtectedRoute path="/settings" component={AuthenticatedApp} />
