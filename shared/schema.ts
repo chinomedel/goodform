@@ -165,8 +165,14 @@ export const aiConfig = pgTable("ai_config", {
   activeProvider: aiProviderEnum("active_provider").notNull().default('openai'),
   openaiApiKey: text("openai_api_key"),
   deepseekApiKey: text("deepseek_api_key"),
-  openaiPricePerMillion: integer("openai_price_per_million").notNull().default(2000), // Price in cents per million tokens
-  deepseekPricePerMillion: integer("deepseek_price_per_million").notNull().default(140), // Price in cents per million tokens
+  // OpenAI pricing (in cents per million tokens)
+  openaiInputPrice: integer("openai_input_price").notNull().default(15), // $0.15 per million
+  openaiOutputPrice: integer("openai_output_price").notNull().default(60), // $0.60 per million
+  openaiCachePrice: integer("openai_cache_price").notNull().default(0), // Cache pricing if applicable
+  // DeepSeek pricing (in cents per million tokens)
+  deepseekInputPrice: integer("deepseek_input_price").notNull().default(14), // $0.14 per million
+  deepseekOutputPrice: integer("deepseek_output_price").notNull().default(28), // $0.28 per million
+  deepseekCachePrice: integer("deepseek_cache_price").notNull().default(1), // $0.014 per million (rounded to 1 cent)
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
