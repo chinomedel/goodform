@@ -177,6 +177,16 @@ export const smtpConfig = pgTable("smtp_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Password Reset Tokens table - stores tokens for password reset flow
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: varchar("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  usedAt: timestamp("used_at"),
+});
+
 // Chat Messages table - stores conversation history with AI agent
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -363,3 +373,11 @@ export const insertSmtpConfigSchema = createInsertSchema(smtpConfig).omit({
 });
 export type InsertSmtpConfig = z.infer<typeof insertSmtpConfigSchema>;
 export type SmtpConfig = typeof smtpConfig.$inferSelect;
+
+export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true,
+});
+export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
