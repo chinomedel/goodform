@@ -26,7 +26,7 @@ const menuItems = [
 
 const adminMenuItems = [
   { title: "Usuarios", url: "/users", icon: Users },
-  { title: "Configuración", url: "/settings", icon: Settings },
+  { title: "Diseño Aplicación", url: "/settings", icon: Settings },
   { title: "Configuración IA", url: "/ai-config", icon: Brain },
   { title: "Configuración SMTP", url: "/smtp-config", icon: Mail },
 ];
