@@ -14,6 +14,15 @@ import {
 import ExcelJS from 'exceljs';
 import { isSelfHostedMode, hasValidLicense, isSetupCompleted, isSaasMode } from "./deployment";
 import { hashPassword } from "./auth";
+import {
+  agentTools,
+  executeAnalyzeResponses,
+  executeCreateChart,
+  executeUpdateChart,
+  executeDeleteChart,
+  executeGetExistingCharts,
+  executeGetFormFields,
+} from "./ai-tools";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
@@ -1162,6 +1171,314 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error deleting chart:", error);
       res.status(500).json({ message: "Error al eliminar gráfico" });
+    }
+  });
+
+  // Chat Agent endpoint
+  app.post('/api/forms/:formId/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const { message } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ message: "Se requiere un mensaje" });
+      }
+
+      const form = await storage.getForm(formId);
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      // Verificar permisos
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(formId, req.user.id);
+        if (!permission) {
+          return res.status(403).json({ message: "No tienes permisos para acceder a este formulario" });
+        }
+      }
+
+      // Obtener configuración de AI
+      const aiConfig = await storage.getAiConfig();
+      const apiKeys = await storage.getDecryptedApiKeys();
+      const apiKey = aiConfig.activeProvider === 'openai' ? apiKeys.openai : apiKeys.deepseek;
+
+      if (!apiKey) {
+        return res.status(500).json({ 
+          message: `No hay API key configurada para ${aiConfig.activeProvider}` 
+        });
+      }
+
+      // Obtener contexto del formulario
+      const fields = await executeGetFormFields(formId);
+      const existingCharts = await executeGetExistingCharts(formId);
+      const responses = await storage.getFormResponses(formId);
+
+      const systemMessage = `Eres un asistente de análisis de datos para formularios. 
+Tienes acceso a las siguientes herramientas para ayudar al usuario:
+- analyze_responses: Para calcular estadísticas y analizar datos
+- create_chart: Para crear nuevos gráficos
+- update_chart: Para modificar gráficos existentes
+- delete_chart: Para eliminar gráficos
+- get_existing_charts: Para ver qué gráficos ya existen
+- get_form_fields: Para ver qué campos tiene el formulario
+
+Contexto del formulario:
+- Nombre: ${form.title}
+- Total de respuestas: ${responses.length}
+- Campos disponibles: ${JSON.stringify(fields)}
+- Gráficos existentes: ${JSON.stringify(existingCharts)}
+
+Cuando el usuario te pida crear o modificar gráficos, usa las herramientas disponibles.
+Responde en español de manera clara y concisa.`;
+
+      let aiResponse: any;
+      let toolCalls: any[] = [];
+      let toolResults: any[] = [];
+
+      if (aiConfig.activeProvider === 'openai') {
+        const OpenAI = (await import('openai')).default;
+        const openai = new OpenAI({ apiKey });
+
+        const messages = [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: message }
+        ];
+
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: messages as any,
+          tools: agentTools as any,
+          tool_choice: 'auto',
+        });
+
+        aiResponse = completion.choices[0].message;
+
+        // Ejecutar tool calls si existen
+        if (aiResponse.tool_calls) {
+          toolCalls = aiResponse.tool_calls;
+          
+          for (const toolCall of aiResponse.tool_calls) {
+            const functionName = toolCall.function.name;
+            const functionArgs = JSON.parse(toolCall.function.arguments);
+
+            let result: any;
+
+            switch (functionName) {
+              case 'analyze_responses':
+                result = await executeAnalyzeResponses(
+                  formId,
+                  functionArgs.field,
+                  functionArgs.operation,
+                  functionArgs.groupBy
+                );
+                break;
+              case 'create_chart':
+                result = await executeCreateChart(
+                  formId,
+                  functionArgs.title,
+                  functionArgs.chartType,
+                  functionArgs.xAxisField,
+                  functionArgs.aggregationType,
+                  functionArgs.yAxisField
+                );
+                break;
+              case 'update_chart':
+                result = await executeUpdateChart(
+                  functionArgs.chartId,
+                  {
+                    title: functionArgs.title,
+                    chartType: functionArgs.chartType,
+                    xAxisField: functionArgs.xAxisField,
+                    yAxisField: functionArgs.yAxisField,
+                    aggregationType: functionArgs.aggregationType,
+                  }
+                );
+                break;
+              case 'delete_chart':
+                result = await executeDeleteChart(functionArgs.chartId);
+                break;
+              case 'get_existing_charts':
+                result = await executeGetExistingCharts(formId);
+                break;
+              case 'get_form_fields':
+                result = await executeGetFormFields(formId);
+                break;
+              default:
+                result = { error: `Función desconocida: ${functionName}` };
+            }
+
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              function_name: functionName,
+              result,
+            });
+          }
+
+          // Segunda llamada con los resultados de las herramientas
+          const secondCompletion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+              ...messages,
+              aiResponse,
+              ...toolResults.map((tr) => ({
+                role: 'tool' as const,
+                tool_call_id: tr.tool_call_id,
+                content: JSON.stringify(tr.result),
+              })),
+            ] as any,
+          });
+
+          aiResponse = secondCompletion.choices[0].message;
+        }
+      } else if (aiConfig.activeProvider === 'deepseek') {
+        const OpenAI = (await import('openai')).default;
+        const deepseek = new OpenAI({ 
+          apiKey,
+          baseURL: 'https://api.deepseek.com'
+        });
+
+        const messages = [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: message }
+        ];
+
+        const completion = await deepseek.chat.completions.create({
+          model: 'deepseek-chat',
+          messages: messages as any,
+          tools: agentTools as any,
+          tool_choice: 'auto',
+        });
+
+        aiResponse = completion.choices[0].message;
+
+        // Ejecutar tool calls si existen
+        if (aiResponse.tool_calls) {
+          toolCalls = aiResponse.tool_calls;
+          
+          for (const toolCall of aiResponse.tool_calls) {
+            const functionName = toolCall.function.name;
+            const functionArgs = JSON.parse(toolCall.function.arguments);
+
+            let result: any;
+
+            switch (functionName) {
+              case 'analyze_responses':
+                result = await executeAnalyzeResponses(
+                  formId,
+                  functionArgs.field,
+                  functionArgs.operation,
+                  functionArgs.groupBy
+                );
+                break;
+              case 'create_chart':
+                result = await executeCreateChart(
+                  formId,
+                  functionArgs.title,
+                  functionArgs.chartType,
+                  functionArgs.xAxisField,
+                  functionArgs.aggregationType,
+                  functionArgs.yAxisField
+                );
+                break;
+              case 'update_chart':
+                result = await executeUpdateChart(
+                  functionArgs.chartId,
+                  {
+                    title: functionArgs.title,
+                    chartType: functionArgs.chartType,
+                    xAxisField: functionArgs.xAxisField,
+                    yAxisField: functionArgs.yAxisField,
+                    aggregationType: functionArgs.aggregationType,
+                  }
+                );
+                break;
+              case 'delete_chart':
+                result = await executeDeleteChart(functionArgs.chartId);
+                break;
+              case 'get_existing_charts':
+                result = await executeGetExistingCharts(formId);
+                break;
+              case 'get_form_fields':
+                result = await executeGetFormFields(formId);
+                break;
+              default:
+                result = { error: `Función desconocida: ${functionName}` };
+            }
+
+            toolResults.push({
+              tool_call_id: toolCall.id,
+              function_name: functionName,
+              result,
+            });
+          }
+
+          // Segunda llamada con los resultados de las herramientas
+          const secondCompletion = await deepseek.chat.completions.create({
+            model: 'deepseek-chat',
+            messages: [
+              ...messages,
+              aiResponse,
+              ...toolResults.map((tr) => ({
+                role: 'tool' as const,
+                tool_call_id: tr.tool_call_id,
+                content: JSON.stringify(tr.result),
+              })),
+            ] as any,
+          });
+
+          aiResponse = secondCompletion.choices[0].message;
+        }
+      }
+
+      // Guardar mensaje del usuario
+      await storage.createChatMessage({
+        formId,
+        userId: req.user.id,
+        role: 'user',
+        content: message,
+      });
+
+      // Guardar respuesta del asistente
+      await storage.createChatMessage({
+        formId,
+        userId: req.user.id,
+        role: 'assistant',
+        content: aiResponse.content || '',
+        toolCalls: toolCalls.length > 0 ? toolCalls : null,
+      });
+
+      res.json({
+        message: aiResponse.content,
+        toolCalls: toolResults,
+      });
+    } catch (error: any) {
+      console.error("Error in chat endpoint:", error);
+      res.status(500).json({ message: `Error: ${error.message}` });
+    }
+  });
+
+  // Get chat history
+  app.get('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const form = await storage.getForm(formId);
+      
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(formId, req.user.id);
+        if (!permission) {
+          return res.status(403).json({ message: "No tienes permisos para acceder a este formulario" });
+        }
+      }
+
+      const history = await storage.getChatHistory(formId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      res.status(500).json({ message: "Error al obtener historial" });
     }
   });
 

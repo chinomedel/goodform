@@ -10,6 +10,7 @@ import {
   licenses,
   charts,
   aiConfig,
+  chatMessages,
   type User,
   type InsertUser,
   type Role,
@@ -32,6 +33,8 @@ import {
   type InsertChart,
   type AiConfig,
   type InsertAiConfig,
+  type ChatMessage,
+  type InsertChatMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -118,6 +121,10 @@ export interface IStorage {
   updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
   updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig>;
   getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }>;
+  
+  // Chat operations
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  getChatHistory(formId: string): Promise<ChatMessage[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -548,6 +555,24 @@ export class DatabaseStorage implements IStorage {
       openai: config.openaiApiKey ? decrypt(config.openaiApiKey) : undefined,
       deepseek: config.deepseekApiKey ? decrypt(config.deepseekApiKey) : undefined,
     };
+  }
+
+  // Chat operations
+  async createChatMessage(messageData: InsertChatMessage): Promise<ChatMessage> {
+    const [message] = await db
+      .insert(chatMessages)
+      .values(messageData)
+      .returning();
+    return message;
+  }
+
+  async getChatHistory(formId: string): Promise<ChatMessage[]> {
+    const messages = await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.formId, formId))
+      .orderBy(chatMessages.createdAt);
+    return messages;
   }
 }
 
