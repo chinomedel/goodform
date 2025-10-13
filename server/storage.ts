@@ -10,6 +10,7 @@ import {
   licenses,
   charts,
   aiConfig,
+  smtpConfig,
   chatMessages,
   type User,
   type InsertUser,
@@ -33,6 +34,8 @@ import {
   type InsertChart,
   type AiConfig,
   type InsertAiConfig,
+  type SmtpConfig,
+  type InsertSmtpConfig,
   type ChatMessage,
   type InsertChatMessage,
 } from "@shared/schema";
@@ -121,6 +124,12 @@ export interface IStorage {
   updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
   updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig>;
   getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }>;
+  
+  // SMTP Config operations
+  getSmtpConfig(): Promise<SmtpConfig>;
+  updateSmtpConfig(config: Partial<InsertSmtpConfig>): Promise<SmtpConfig>;
+  updateSmtpCredentials(user?: string, password?: string): Promise<SmtpConfig>;
+  getDecryptedSmtpCredentials(): Promise<{ user?: string; password?: string }>;
   
   // Chat operations
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
@@ -554,6 +563,61 @@ export class DatabaseStorage implements IStorage {
     return {
       openai: config.openaiApiKey ? decrypt(config.openaiApiKey) : undefined,
       deepseek: config.deepseekApiKey ? decrypt(config.deepseekApiKey) : undefined,
+    };
+  }
+
+  // SMTP Config operations
+  async getSmtpConfig(): Promise<SmtpConfig> {
+    const [config] = await db.select().from(smtpConfig).where(eq(smtpConfig.id, 'default'));
+    
+    if (!config) {
+      // Create default config if it doesn't exist
+      const [newConfig] = await db.insert(smtpConfig).values({ id: 'default' }).returning();
+      return newConfig;
+    }
+    
+    return config;
+  }
+
+  async updateSmtpConfig(configData: Partial<InsertSmtpConfig>): Promise<SmtpConfig> {
+    const [config] = await db
+      .update(smtpConfig)
+      .set({ ...configData, updatedAt: new Date() })
+      .where(eq(smtpConfig.id, 'default'))
+      .returning();
+    return config;
+  }
+
+  async updateSmtpCredentials(user?: string, password?: string): Promise<SmtpConfig> {
+    const { encrypt } = await import('./crypto-utils');
+    
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (user !== undefined) {
+      updateData.user = user ? encrypt(user) : null;
+    }
+    
+    if (password !== undefined) {
+      updateData.password = password ? encrypt(password) : null;
+    }
+    
+    const [config] = await db
+      .update(smtpConfig)
+      .set(updateData)
+      .where(eq(smtpConfig.id, 'default'))
+      .returning();
+    
+    return config;
+  }
+
+  async getDecryptedSmtpCredentials(): Promise<{ user?: string; password?: string }> {
+    const { decrypt } = await import('./crypto-utils');
+    
+    const config = await this.getSmtpConfig();
+    
+    return {
+      user: config.user ? decrypt(config.user) : undefined,
+      password: config.password ? decrypt(config.password) : undefined,
     };
   }
 
