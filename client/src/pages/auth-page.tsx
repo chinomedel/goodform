@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,6 +101,13 @@ export default function AuthPage() {
                     >
                       {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar Sesión"}
                     </Button>
+                    <div className="text-center">
+                      <Link href="/forgot-password">
+                        <Button variant="link" className="text-sm" data-testid="link-forgot-password">
+                          ¿Olvidaste tu contraseña?
+                        </Button>
+                      </Link>
+                    </div>
                   </form>
                 </CardContent>
               </Card>
