@@ -629,15 +629,33 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async updateAiPricing(openaiPrice?: number, deepseekPrice?: number): Promise<AiConfig> {
+  async updateAiPricing(pricing: {
+    openaiInputPrice?: number;
+    openaiOutputPrice?: number;
+    openaiCachePrice?: number;
+    deepseekInputPrice?: number;
+    deepseekOutputPrice?: number;
+    deepseekCachePrice?: number;
+  }): Promise<AiConfig> {
     const updateData: any = { updatedAt: new Date() };
     
-    if (openaiPrice !== undefined) {
-      updateData.openaiPricePerMillion = openaiPrice;
+    if (pricing.openaiInputPrice !== undefined) {
+      updateData.openaiInputPrice = pricing.openaiInputPrice;
     }
-    
-    if (deepseekPrice !== undefined) {
-      updateData.deepseekPricePerMillion = deepseekPrice;
+    if (pricing.openaiOutputPrice !== undefined) {
+      updateData.openaiOutputPrice = pricing.openaiOutputPrice;
+    }
+    if (pricing.openaiCachePrice !== undefined) {
+      updateData.openaiCachePrice = pricing.openaiCachePrice;
+    }
+    if (pricing.deepseekInputPrice !== undefined) {
+      updateData.deepseekInputPrice = pricing.deepseekInputPrice;
+    }
+    if (pricing.deepseekOutputPrice !== undefined) {
+      updateData.deepseekOutputPrice = pricing.deepseekOutputPrice;
+    }
+    if (pricing.deepseekCachePrice !== undefined) {
+      updateData.deepseekCachePrice = pricing.deepseekCachePrice;
     }
     
     const [config] = await db
