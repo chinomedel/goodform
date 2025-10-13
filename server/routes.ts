@@ -1813,6 +1813,30 @@ Responde en español de manera clara y concisa.`;
     }
   });
 
+  // Usage Reports - Login statistics (Super Admin & Admin Auto-host only)
+  app.get('/api/reports/logins', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const stats = await storage.getLoginStatsByDay(days);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching login stats:", error);
+      res.status(500).json({ message: "Error al obtener estadísticas de inicio de sesión" });
+    }
+  });
+
+  // Usage Reports - Password reset statistics (Super Admin & Admin Auto-host only)
+  app.get('/api/reports/password-resets', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const stats = await storage.getPasswordResetStatsByDay(days);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching password reset stats:", error);
+      res.status(500).json({ message: "Error al obtener estadísticas de recuperación de contraseñas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
