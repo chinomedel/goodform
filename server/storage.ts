@@ -63,6 +63,7 @@ export interface IStorage {
   updateUserRole(userId: string, roleId: string): Promise<User>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
   updateUserStatus(userId: string, data: { isDeleted?: boolean; blockReason?: 'non_payment' | 'login_attempts' | 'general' | null; blockedAt?: Date | null }): Promise<User>;
+  updateUserName(userId: string, data: { firstName?: string; lastName?: string }): Promise<User>;
   
   // Form operations
   createForm(form: InsertForm): Promise<Form>;
@@ -233,6 +234,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserStatus(userId: string, data: { isDeleted?: boolean; blockReason?: 'non_payment' | 'login_attempts' | 'general' | null; blockedAt?: Date | null }): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserName(userId: string, data: { firstName?: string; lastName?: string }): Promise<User> {
     const [user] = await db
       .update(users)
       .set({ ...data, updatedAt: new Date() })
