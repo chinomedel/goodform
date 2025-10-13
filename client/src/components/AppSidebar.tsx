@@ -33,6 +33,7 @@ const adminMenuItems = [
 
 const reportsMenuItems = [
   { title: "Uso Aplicación", url: "/reports/usage", icon: BarChart3 },
+  { title: "Uso de IA", url: "/reports/ai-usage", icon: Brain },
 ];
 
 const superAdminMenuItems = [

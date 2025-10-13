@@ -12,7 +12,7 @@ import { es } from 'date-fns/locale';
 import { useAuth } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -67,11 +67,14 @@ export default function AiReportsPage() {
 
   const updatePricingMutation = useMutation({
     mutationFn: async (data: { openaiPrice?: number; deepseekPrice?: number }) => {
-      return await apiRequest("/api/ai-usage/pricing", {
+      const res = await fetch("/api/ai-usage/pricing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: 'include'
       });
+      if (!res.ok) throw new Error("Error al actualizar precios");
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ai-usage/pricing"] });
