@@ -14,6 +14,8 @@ import {
 import ExcelJS from 'exceljs';
 import { isSelfHostedMode, hasValidLicense, isSetupCompleted, isSaasMode } from "./deployment";
 import { hashPassword } from "./auth";
+import { sendEmail, generatePasswordResetEmail } from "./email-utils";
+import crypto from 'crypto';
 import {
   agentTools,
   executeAnalyzeResponses,
@@ -132,6 +134,152 @@ async function canEditForm(formId: string, userId: string): Promise<boolean> {
 export function registerRoutes(app: Express): Server {
   // Auth middleware and routes (/api/register, /api/login, /api/logout, /api/user)
   setupAuth(app);
+
+  // Password Reset - Forgot Password (Public)
+  app.post('/api/auth/forgot-password', async (req: any, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email es requerido" });
+      }
+
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      // Always return success to prevent email enumeration
+      if (!user) {
+        return res.json({ 
+          success: true, 
+          message: "Si el email existe, recibirás un enlace para restablecer tu contraseña" 
+        });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+      // Save token to database
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token: resetToken,
+        expiresAt,
+      });
+
+      // Get app config for app name
+      const config = await storage.getAppConfig();
+      const appName = config.appName || 'GoodForm';
+
+      // Generate reset link
+      const resetLink = `${req.protocol}://${req.get('host')}/reset-password?token=${resetToken}`;
+      
+      // Generate email content
+      const { html, text } = generatePasswordResetEmail(resetLink, appName);
+
+      // Send email
+      const emailSent = await sendEmail({
+        to: email,
+        subject: `Restablecer contraseña - ${appName}`,
+        html,
+        text,
+      });
+
+      if (!emailSent) {
+        console.error('Failed to send password reset email');
+        return res.status(500).json({ 
+          success: false,
+          message: "Error al enviar el email. Por favor, contacta al administrador." 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Si el email existe, recibirás un enlace para restablecer tu contraseña" 
+      });
+    } catch (error) {
+      console.error('Error in forgot-password:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error al procesar la solicitud" 
+      });
+    }
+  });
+
+  // Password Reset - Validate Token (Public)
+  app.get('/api/auth/validate-reset-token', async (req: any, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ valid: false, message: "Token inválido" });
+      }
+
+      const resetToken = await storage.getPasswordResetToken(token);
+
+      if (!resetToken) {
+        return res.json({ valid: false, message: "El enlace es inválido o ha expirado" });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      console.error('Error validating reset token:', error);
+      res.status(500).json({ valid: false, message: "Error al validar el token" });
+    }
+  });
+
+  // Password Reset - Reset Password (Public)
+  app.post('/api/auth/reset-password', async (req: any, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Token y nueva contraseña son requeridos" 
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ 
+          success: false,
+          message: "La contraseña debe tener al menos 6 caracteres" 
+        });
+      }
+
+      // Validate token
+      const resetToken = await storage.getPasswordResetToken(token);
+
+      if (!resetToken) {
+        return res.status(400).json({ 
+          success: false,
+          message: "El enlace es inválido o ha expirado" 
+        });
+      }
+
+      // Hash new password
+      const hashedPassword = await hashPassword(newPassword);
+
+      // Update user password
+      await storage.updateUserPassword(resetToken.userId, hashedPassword);
+
+      // Mark token as used
+      await storage.markTokenAsUsed(token);
+
+      // Clean up expired tokens
+      await storage.deleteExpiredTokens();
+
+      res.json({ 
+        success: true,
+        message: "Contraseña actualizada correctamente" 
+      });
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "Error al restablecer la contraseña" 
+      });
+    }
+  });
 
   // User management (Admin only)
   app.get('/api/users', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
