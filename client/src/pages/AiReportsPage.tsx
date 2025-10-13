@@ -23,13 +23,26 @@ interface AiUsageStats {
   byDay: { date: string; tokens: number; cost: number }[];
 }
 
+interface PricingData {
+  openaiInputPrice: number;
+  openaiOutputPrice: number;
+  openaiCachePrice: number;
+  deepseekInputPrice: number;
+  deepseekOutputPrice: number;
+  deepseekCachePrice: number;
+}
+
 export default function AiReportsPage() {
   const { user, isLoading: isLoadingAuth } = useAuth();
   const { toast } = useToast();
   const [provider, setProvider] = useState<string>("all");
   const [dateRange, setDateRange] = useState<string>("30");
-  const [openaiPrice, setOpenaiPrice] = useState<string>("");
-  const [deepseekPrice, setDeepseekPrice] = useState<string>("");
+  const [openaiInputPrice, setOpenaiInputPrice] = useState<string>("");
+  const [openaiOutputPrice, setOpenaiOutputPrice] = useState<string>("");
+  const [openaiCachePrice, setOpenaiCachePrice] = useState<string>("");
+  const [deepseekInputPrice, setDeepseekInputPrice] = useState<string>("");
+  const [deepseekOutputPrice, setDeepseekOutputPrice] = useState<string>("");
+  const [deepseekCachePrice, setDeepseekCachePrice] = useState<string>("");
 
   const isAdmin = user?.isSuperAdmin || user?.roleId === 'admin_auto_host' || user?.roleId === 'super_admin';
 
@@ -53,7 +66,7 @@ export default function AiReportsPage() {
     enabled: isAdmin,
   });
 
-  const { data: pricing, isLoading: isLoadingPricing } = useQuery<{ openaiPricePerMillion: number; deepseekPricePerMillion: number }>({
+  const { data: pricing, isLoading: isLoadingPricing } = useQuery<PricingData>({
     queryKey: ["/api/ai-usage/pricing"],
     queryFn: async () => {
       const res = await fetch("/api/ai-usage/pricing", {
@@ -66,7 +79,7 @@ export default function AiReportsPage() {
   });
 
   const updatePricingMutation = useMutation({
-    mutationFn: async (data: { openaiPrice?: number; deepseekPrice?: number }) => {
+    mutationFn: async (data: Partial<PricingData>) => {
       const res = await fetch("/api/ai-usage/pricing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,8 +96,12 @@ export default function AiReportsPage() {
         title: "Precios actualizados",
         description: "Los precios por millón de tokens han sido actualizados exitosamente",
       });
-      setOpenaiPrice("");
-      setDeepseekPrice("");
+      setOpenaiInputPrice("");
+      setOpenaiOutputPrice("");
+      setOpenaiCachePrice("");
+      setDeepseekInputPrice("");
+      setDeepseekOutputPrice("");
+      setDeepseekCachePrice("");
     },
     onError: () => {
       toast({
@@ -132,9 +149,13 @@ export default function AiReportsPage() {
   })) || [];
 
   const handleUpdatePricing = () => {
-    const data: { openaiPrice?: number; deepseekPrice?: number } = {};
-    if (openaiPrice) data.openaiPrice = parseFloat(openaiPrice);
-    if (deepseekPrice) data.deepseekPrice = parseFloat(deepseekPrice);
+    const data: Partial<PricingData> = {};
+    if (openaiInputPrice) data.openaiInputPrice = parseFloat(openaiInputPrice);
+    if (openaiOutputPrice) data.openaiOutputPrice = parseFloat(openaiOutputPrice);
+    if (openaiCachePrice) data.openaiCachePrice = parseFloat(openaiCachePrice);
+    if (deepseekInputPrice) data.deepseekInputPrice = parseFloat(deepseekInputPrice);
+    if (deepseekOutputPrice) data.deepseekOutputPrice = parseFloat(deepseekOutputPrice);
+    if (deepseekCachePrice) data.deepseekCachePrice = parseFloat(deepseekCachePrice);
     
     if (Object.keys(data).length > 0) {
       updatePricingMutation.mutate(data);
@@ -372,51 +393,121 @@ export default function AiReportsPage() {
         <CardHeader>
           <CardTitle>Configuración de Precios</CardTitle>
           <CardDescription>
-            Actualizar costo por millón de tokens para cada proveedor
+            Actualizar costo por millón de tokens (en centavos USD)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="openai-price">OpenAI - Precio por millón (USD)</Label>
-              <div className="flex gap-2">
+        <CardContent className="space-y-6">
+          {/* OpenAI Pricing */}
+          <div className="space-y-4">
+            <h3 className="font-medium">OpenAI</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="openai-input-price">Entrada (centavos/millón)</Label>
                 <Input
-                  id="openai-price"
-                  data-testid="input-openai-price"
+                  id="openai-input-price"
+                  data-testid="input-openai-input-price"
                   type="number"
-                  placeholder={`Actual: $${pricing?.openaiPricePerMillion || 0}`}
-                  value={openaiPrice}
-                  onChange={(e) => setOpenaiPrice(e.target.value)}
+                  placeholder={`Actual: ${pricing?.openaiInputPrice || 0}¢`}
+                  value={openaiInputPrice}
+                  onChange={(e) => setOpenaiInputPrice(e.target.value)}
                   step="0.01"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Actual: {pricing?.openaiInputPrice || 0}¢ (~${((pricing?.openaiInputPrice || 0) / 100).toFixed(2)})
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Precio actual: ${pricing?.openaiPricePerMillion || 0} por millón de tokens
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="deepseek-price">DeepSeek - Precio por millón (USD)</Label>
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="openai-output-price">Salida (centavos/millón)</Label>
                 <Input
-                  id="deepseek-price"
-                  data-testid="input-deepseek-price"
+                  id="openai-output-price"
+                  data-testid="input-openai-output-price"
                   type="number"
-                  placeholder={`Actual: $${pricing?.deepseekPricePerMillion || 0}`}
-                  value={deepseekPrice}
-                  onChange={(e) => setDeepseekPrice(e.target.value)}
+                  placeholder={`Actual: ${pricing?.openaiOutputPrice || 0}¢`}
+                  value={openaiOutputPrice}
+                  onChange={(e) => setOpenaiOutputPrice(e.target.value)}
                   step="0.01"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Actual: {pricing?.openaiOutputPrice || 0}¢ (~${((pricing?.openaiOutputPrice || 0) / 100).toFixed(2)})
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Precio actual: ${pricing?.deepseekPricePerMillion || 0} por millón de tokens
-              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="openai-cache-price">Caché (centavos/millón)</Label>
+                <Input
+                  id="openai-cache-price"
+                  data-testid="input-openai-cache-price"
+                  type="number"
+                  placeholder={`Actual: ${pricing?.openaiCachePrice || 0}¢`}
+                  value={openaiCachePrice}
+                  onChange={(e) => setOpenaiCachePrice(e.target.value)}
+                  step="0.01"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Actual: {pricing?.openaiCachePrice || 0}¢ (~${((pricing?.openaiCachePrice || 0) / 100).toFixed(2)})
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* DeepSeek Pricing */}
+          <div className="space-y-4">
+            <h3 className="font-medium">DeepSeek</h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="deepseek-input-price">Entrada (centavos/millón)</Label>
+                <Input
+                  id="deepseek-input-price"
+                  data-testid="input-deepseek-input-price"
+                  type="number"
+                  placeholder={`Actual: ${pricing?.deepseekInputPrice || 0}¢`}
+                  value={deepseekInputPrice}
+                  onChange={(e) => setDeepseekInputPrice(e.target.value)}
+                  step="0.01"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Actual: {pricing?.deepseekInputPrice || 0}¢ (~${((pricing?.deepseekInputPrice || 0) / 100).toFixed(2)})
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="deepseek-output-price">Salida (centavos/millón)</Label>
+                <Input
+                  id="deepseek-output-price"
+                  data-testid="input-deepseek-output-price"
+                  type="number"
+                  placeholder={`Actual: ${pricing?.deepseekOutputPrice || 0}¢`}
+                  value={deepseekOutputPrice}
+                  onChange={(e) => setDeepseekOutputPrice(e.target.value)}
+                  step="0.01"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Actual: {pricing?.deepseekOutputPrice || 0}¢ (~${((pricing?.deepseekOutputPrice || 0) / 100).toFixed(2)})
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="deepseek-cache-price">Caché (centavos/millón)</Label>
+                <Input
+                  id="deepseek-cache-price"
+                  data-testid="input-deepseek-cache-price"
+                  type="number"
+                  placeholder={`Actual: ${pricing?.deepseekCachePrice || 0}¢`}
+                  value={deepseekCachePrice}
+                  onChange={(e) => setDeepseekCachePrice(e.target.value)}
+                  step="0.01"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Actual: {pricing?.deepseekCachePrice || 0}¢ (~${((pricing?.deepseekCachePrice || 0) / 100).toFixed(2)})
+                </p>
+              </div>
             </div>
           </div>
 
           <Button
             onClick={handleUpdatePricing}
-            disabled={updatePricingMutation.isPending || (!openaiPrice && !deepseekPrice)}
+            disabled={updatePricingMutation.isPending || (!openaiInputPrice && !openaiOutputPrice && !openaiCachePrice && !deepseekInputPrice && !deepseekOutputPrice && !deepseekCachePrice)}
             data-testid="button-update-pricing"
           >
             {updatePricingMutation.isPending ? (
