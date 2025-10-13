@@ -10,6 +10,7 @@ import {
   licenses,
   charts,
   aiConfig,
+  aiUsageLogs,
   smtpConfig,
   chatMessages,
   passwordResetTokens,
@@ -38,6 +39,8 @@ import {
   type InsertChart,
   type AiConfig,
   type InsertAiConfig,
+  type AiUsageLog,
+  type InsertAiUsageLog,
   type SmtpConfig,
   type InsertSmtpConfig,
   type ChatMessage,
@@ -132,7 +135,18 @@ export interface IStorage {
   getAiConfig(): Promise<AiConfig>;
   updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
   updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig>;
+  updateAiPricing(openaiPrice?: number, deepseekPrice?: number): Promise<AiConfig>;
   getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }>;
+  
+  // AI Usage Logs operations
+  createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
+  getAiUsageLogs(filters?: { provider?: string; startDate?: Date; endDate?: Date }): Promise<AiUsageLog[]>;
+  getAiUsageStats(filters?: { provider?: string; startDate?: Date; endDate?: Date }): Promise<{
+    totalTokens: number;
+    totalCost: number;
+    byProvider: { provider: string; tokens: number; cost: number }[];
+    byDay: { date: string; tokens: number; cost: number }[];
+  }>;
   
   // SMTP Config operations
   getSmtpConfig(): Promise<SmtpConfig>;
@@ -612,6 +626,107 @@ export class DatabaseStorage implements IStorage {
     return {
       openai: config.openaiApiKey ? decrypt(config.openaiApiKey) : undefined,
       deepseek: config.deepseekApiKey ? decrypt(config.deepseekApiKey) : undefined,
+    };
+  }
+
+  async updateAiPricing(openaiPrice?: number, deepseekPrice?: number): Promise<AiConfig> {
+    const updateData: any = { updatedAt: new Date() };
+    
+    if (openaiPrice !== undefined) {
+      updateData.openaiPricePerMillion = openaiPrice;
+    }
+    
+    if (deepseekPrice !== undefined) {
+      updateData.deepseekPricePerMillion = deepseekPrice;
+    }
+    
+    const [config] = await db
+      .update(aiConfig)
+      .set(updateData)
+      .where(eq(aiConfig.id, 'default'))
+      .returning();
+    
+    return config;
+  }
+
+  // AI Usage Logs operations
+  async createAiUsageLog(logData: InsertAiUsageLog): Promise<AiUsageLog> {
+    const [log] = await db
+      .insert(aiUsageLogs)
+      .values(logData)
+      .returning();
+    return log;
+  }
+
+  async getAiUsageLogs(filters?: { provider?: string; startDate?: Date; endDate?: Date }): Promise<AiUsageLog[]> {
+    let query = db.select().from(aiUsageLogs).$dynamic();
+    
+    const conditions = [];
+    
+    if (filters?.provider) {
+      conditions.push(eq(aiUsageLogs.provider, filters.provider as any));
+    }
+    
+    if (filters?.startDate) {
+      conditions.push(sql`${aiUsageLogs.createdAt} >= ${filters.startDate}`);
+    }
+    
+    if (filters?.endDate) {
+      conditions.push(sql`${aiUsageLogs.createdAt} <= ${filters.endDate}`);
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    return await query.orderBy(desc(aiUsageLogs.createdAt));
+  }
+
+  async getAiUsageStats(filters?: { provider?: string; startDate?: Date; endDate?: Date }): Promise<{
+    totalTokens: number;
+    totalCost: number;
+    byProvider: { provider: string; tokens: number; cost: number }[];
+    byDay: { date: string; tokens: number; cost: number }[];
+  }> {
+    const logs = await this.getAiUsageLogs(filters);
+    
+    const totalTokens = logs.reduce((sum, log) => sum + log.totalTokens, 0);
+    const totalCost = logs.reduce((sum, log) => sum + log.estimatedCost, 0);
+    
+    // Group by provider
+    const byProviderMap = new Map<string, { tokens: number; cost: number }>();
+    logs.forEach(log => {
+      const existing = byProviderMap.get(log.provider) || { tokens: 0, cost: 0 };
+      byProviderMap.set(log.provider, {
+        tokens: existing.tokens + log.totalTokens,
+        cost: existing.cost + log.estimatedCost
+      });
+    });
+    const byProvider = Array.from(byProviderMap.entries()).map(([provider, data]) => ({
+      provider,
+      ...data
+    }));
+    
+    // Group by day
+    const byDayMap = new Map<string, { tokens: number; cost: number }>();
+    logs.forEach(log => {
+      const date = log.createdAt ? new Date(log.createdAt).toISOString().split('T')[0] : 'unknown';
+      const existing = byDayMap.get(date) || { tokens: 0, cost: 0 };
+      byDayMap.set(date, {
+        tokens: existing.tokens + log.totalTokens,
+        cost: existing.cost + log.estimatedCost
+      });
+    });
+    const byDay = Array.from(byDayMap.entries()).map(([date, data]) => ({
+      date,
+      ...data
+    })).sort((a, b) => a.date.localeCompare(b.date));
+    
+    return {
+      totalTokens,
+      totalCost,
+      byProvider,
+      byDay
     };
   }
 
