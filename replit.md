@@ -55,14 +55,40 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
       - Keys never exposed to frontend (password input fields)
       - Encryption key derived from DATABASE_URL or ENCRYPTION_KEY environment variable
       - Fallback support for Replit Secrets (OPENAI_API_KEY, DEEPSEEK_API_KEY)
+  - **AI Analyst Agent**: Intelligent chat agent integrated into FormResponsesPage (third tab "Agente Analista")
+    - **Natural language chat**: Users can ask questions about form data and get intelligent analysis
+    - **Automatic chart management**: Can create, edit, and delete charts through conversation
+    - **Function calling**: Uses tool calls to execute actions:
+      - `get_form_responses`: Retrieve and analyze form response data
+      - `create_chart`: Create new visualization charts
+      - `update_chart`: Modify existing charts
+      - `delete_chart`: Remove charts
+      - `list_charts`: View all existing charts for the form
+    - **Permission enforcement**: Only users with edit permissions can create/modify/delete charts
+    - **Chat persistence**: Conversation history stored in `chat_messages` table with role, content, and tool calls
+    - **Smart responses**: Generates meaningful human-readable messages even when executing tools
+    - **Error handling**: Provider-specific and permission-specific error messages
+    - **UI Features**: 
+      - Message history display with user/assistant bubbles
+      - Loading indicators during AI processing
+      - Tool execution feedback with emojis and descriptions
+      - Automatic chart refresh after modifications
+      - Toast notifications for success/error states
   - **API Endpoints**:
     - GET `/api/ai-config` - Retrieve current AI configuration
     - PATCH `/api/ai-config` - Update active provider (admin only)
     - POST `/api/ai-config/update-keys` - Update and encrypt API keys (admin only)
     - GET `/api/ai-config/keys-status` - Check if keys are configured (admin only)
     - POST `/api/ai-config/test/:provider` - Test API connection for a specific provider
-  - Database: `ai_config` table stores active provider preference and encrypted API keys
-  - Security: Crypto utilities (server/crypto-utils.ts) handle encryption/decryption using Node.js crypto module
+    - POST `/api/forms/:formId/chat` - Chat with AI analyst agent (requires form access)
+    - GET `/api/forms/:formId/chat/history` - Get chat conversation history
+  - Database: 
+    - `ai_config` table stores active provider preference and encrypted API keys
+    - `chat_messages` table stores conversation history with tool call metadata
+  - Security: 
+    - Crypto utilities (server/crypto-utils.ts) handle encryption/decryption using Node.js crypto module
+    - Permission checks before all chart mutation operations
+    - API keys never exposed to frontend
 - **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
 - **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
 - **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
