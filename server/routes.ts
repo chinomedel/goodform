@@ -1573,8 +1573,11 @@ Responde en español de manera clara y concisa.`;
 
         // Registrar uso de tokens
         if (completion.usage) {
-          const pricePerMillion = aiConfig.openaiPricePerMillion || 2000;
-          const estimatedCost = Math.round((completion.usage.total_tokens / 1000000) * pricePerMillion);
+          const inputPrice = aiConfig.openaiInputPrice || 15;
+          const outputPrice = aiConfig.openaiOutputPrice || 60;
+          const inputCost = Math.round((completion.usage.prompt_tokens / 1000000) * inputPrice);
+          const outputCost = Math.round((completion.usage.completion_tokens / 1000000) * outputPrice);
+          const estimatedCost = inputCost + outputCost;
           await storage.createAiUsageLog({
             provider: 'openai',
             model: 'gpt-4o-mini',
@@ -1678,8 +1681,11 @@ Responde en español de manera clara y concisa.`;
 
           // Registrar uso de tokens de la segunda llamada
           if (secondCompletion.usage) {
-            const pricePerMillion = aiConfig.openaiPricePerMillion || 2000;
-            const estimatedCost = Math.round((secondCompletion.usage.total_tokens / 1000000) * pricePerMillion);
+            const inputPrice = aiConfig.openaiInputPrice || 15;
+            const outputPrice = aiConfig.openaiOutputPrice || 60;
+            const inputCost = Math.round((secondCompletion.usage.prompt_tokens / 1000000) * inputPrice);
+            const outputCost = Math.round((secondCompletion.usage.completion_tokens / 1000000) * outputPrice);
+            const estimatedCost = inputCost + outputCost;
             await storage.createAiUsageLog({
               provider: 'openai',
               model: 'gpt-4o-mini',
@@ -1715,8 +1721,11 @@ Responde en español de manera clara y concisa.`;
 
         // Registrar uso de tokens
         if (completion.usage) {
-          const pricePerMillion = aiConfig.deepseekPricePerMillion || 140;
-          const estimatedCost = Math.round((completion.usage.total_tokens / 1000000) * pricePerMillion);
+          const inputPrice = aiConfig.deepseekInputPrice || 14;
+          const outputPrice = aiConfig.deepseekOutputPrice || 28;
+          const inputCost = Math.round((completion.usage.prompt_tokens / 1000000) * inputPrice);
+          const outputCost = Math.round((completion.usage.completion_tokens / 1000000) * outputPrice);
+          const estimatedCost = inputCost + outputCost;
           await storage.createAiUsageLog({
             provider: 'deepseek',
             model: 'deepseek-chat',
@@ -1820,8 +1829,11 @@ Responde en español de manera clara y concisa.`;
 
           // Registrar uso de tokens de la segunda llamada
           if (secondCompletion.usage) {
-            const pricePerMillion = aiConfig.deepseekPricePerMillion || 140;
-            const estimatedCost = Math.round((secondCompletion.usage.total_tokens / 1000000) * pricePerMillion);
+            const inputPrice = aiConfig.deepseekInputPrice || 14;
+            const outputPrice = aiConfig.deepseekOutputPrice || 28;
+            const inputCost = Math.round((secondCompletion.usage.prompt_tokens / 1000000) * inputPrice);
+            const outputCost = Math.round((secondCompletion.usage.completion_tokens / 1000000) * outputPrice);
+            const estimatedCost = inputCost + outputCost;
             await storage.createAiUsageLog({
               provider: 'deepseek',
               model: 'deepseek-chat',
@@ -1983,9 +1995,23 @@ Responde en español de manera clara y concisa.`;
   // AI Usage - Update pricing (Super Admin & Admin Auto-host only)
   app.post('/api/ai-usage/pricing', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
     try {
-      const { openaiPrice, deepseekPrice } = req.body;
+      const { 
+        openaiInputPrice, 
+        openaiOutputPrice, 
+        openaiCachePrice,
+        deepseekInputPrice, 
+        deepseekOutputPrice, 
+        deepseekCachePrice 
+      } = req.body;
 
-      const updatedConfig = await storage.updateAiPricing(openaiPrice, deepseekPrice);
+      const updatedConfig = await storage.updateAiPricing({
+        openaiInputPrice,
+        openaiOutputPrice,
+        openaiCachePrice,
+        deepseekInputPrice,
+        deepseekOutputPrice,
+        deepseekCachePrice,
+      });
       res.json(updatedConfig);
     } catch (error) {
       console.error("Error updating AI pricing:", error);
@@ -1998,8 +2024,12 @@ Responde en español de manera clara y concisa.`;
     try {
       const config = await storage.getAiConfig();
       res.json({
-        openaiPricePerMillion: config.openaiPricePerMillion,
-        deepseekPricePerMillion: config.deepseekPricePerMillion,
+        openaiInputPrice: config.openaiInputPrice,
+        openaiOutputPrice: config.openaiOutputPrice,
+        openaiCachePrice: config.openaiCachePrice,
+        deepseekInputPrice: config.deepseekInputPrice,
+        deepseekOutputPrice: config.deepseekOutputPrice,
+        deepseekCachePrice: config.deepseekCachePrice,
       });
     } catch (error) {
       console.error("Error fetching AI pricing:", error);

@@ -135,7 +135,14 @@ export interface IStorage {
   getAiConfig(): Promise<AiConfig>;
   updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
   updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig>;
-  updateAiPricing(openaiPrice?: number, deepseekPrice?: number): Promise<AiConfig>;
+  updateAiPricing(pricing: {
+    openaiInputPrice?: number;
+    openaiOutputPrice?: number;
+    openaiCachePrice?: number;
+    deepseekInputPrice?: number;
+    deepseekOutputPrice?: number;
+    deepseekCachePrice?: number;
+  }): Promise<AiConfig>;
   getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }>;
   
   // AI Usage Logs operations
