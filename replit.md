@@ -112,6 +112,38 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
     - Role-based access control (only super_admin and admin_auto_host)
     - Encrypted credential storage
     - SMTP credentials never exposed to frontend
+- **Password Recovery System**: Complete forgot password and reset password flow with email notifications.
+  - **Email Utilities**: Centralized email sending using configured SMTP settings (server/email-utils.ts)
+    - `sendEmail`: Generic email sending function using nodemailer with SMTP config
+    - `generatePasswordResetEmail`: HTML/text template generator for password reset emails
+  - **Forgot Password Flow** (Public route: `/forgot-password`):
+    - User enters email address
+    - System generates secure 32-byte random token with 1-hour expiration
+    - Email sent with password reset link containing token
+    - Generic success message to prevent email enumeration
+  - **Reset Password Flow** (Public route: `/reset-password?token=...`):
+    - Token validation on page load
+    - User enters new password (minimum 6 characters) with confirmation
+    - Token marked as used after successful password update
+    - Automatic cleanup of expired tokens
+    - Redirect to login page after successful reset
+  - **Security Features**:
+    - Tokens expire after 1 hour
+    - One-time use tokens (marked as used after redemption)
+    - Email enumeration prevention (generic success messages)
+    - Secure token generation using crypto.randomBytes
+    - Password strength validation (minimum 6 characters)
+  - **API Endpoints** (Public):
+    - POST `/api/auth/forgot-password` - Generate reset token and send email
+    - GET `/api/auth/validate-reset-token` - Validate token before displaying reset form
+    - POST `/api/auth/reset-password` - Update password with valid token
+  - **Database**:
+    - `password_reset_tokens` table stores userId, token, expiresAt, createdAt, usedAt
+  - **UI/UX**:
+    - "¿Olvidaste tu contraseña?" link in login page
+    - ForgotPasswordPage with email input and success confirmation
+    - ResetPasswordPage with token validation, loading states, and error handling
+    - Consistent styling with existing authentication pages
 - **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
 - **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
 - **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
