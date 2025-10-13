@@ -187,6 +187,13 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   usedAt: timestamp("used_at"),
 });
 
+// Login Logs table - stores user login activity for analytics
+export const loginLogs = pgTable("login_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  loginAt: timestamp("login_at").defaultNow(),
+});
+
 // Chat Messages table - stores conversation history with AI agent
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -381,3 +388,10 @@ export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTo
 });
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+export const insertLoginLogSchema = createInsertSchema(loginLogs).omit({
+  id: true,
+  loginAt: true,
+});
+export type InsertLoginLog = z.infer<typeof insertLoginLogSchema>;
+export type LoginLog = typeof loginLogs.$inferSelect;
