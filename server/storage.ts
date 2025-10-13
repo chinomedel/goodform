@@ -13,10 +13,13 @@ import {
   smtpConfig,
   chatMessages,
   passwordResetTokens,
+  loginLogs,
   type User,
   type InsertUser,
   type Role,
   type InsertRole,
+  type LoginLog,
+  type InsertLoginLog,
   type Form,
   type InsertForm,
   type FormField,
@@ -144,6 +147,13 @@ export interface IStorage {
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
   markTokenAsUsed(token: string): Promise<void>;
   deleteExpiredTokens(): Promise<void>;
+  
+  // Login Log operations
+  createLoginLog(log: InsertLoginLog): Promise<LoginLog>;
+  
+  // Usage Reports operations
+  getLoginStatsByDay(days: number): Promise<{ date: string; count: number }[]>;
+  getPasswordResetStatsByDay(days: number): Promise<{ date: string; count: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -690,6 +700,50 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(passwordResetTokens)
       .where(sql`${passwordResetTokens.expiresAt} < NOW()`);
+  }
+
+  // Login Log operations
+  async createLoginLog(logData: InsertLoginLog): Promise<LoginLog> {
+    const [log] = await db
+      .insert(loginLogs)
+      .values(logData)
+      .returning();
+    return log;
+  }
+
+  // Usage Reports operations
+  async getLoginStatsByDay(days: number): Promise<{ date: string; count: number }[]> {
+    const result = await db.execute(sql`
+      SELECT 
+        DATE(login_at) as date,
+        COUNT(*)::int as count
+      FROM login_logs
+      WHERE login_at >= NOW() - INTERVAL '${sql.raw(days.toString())} days'
+      GROUP BY DATE(login_at)
+      ORDER BY DATE(login_at) DESC
+    `);
+    
+    return result.rows.map((row: any) => ({
+      date: row.date,
+      count: row.count,
+    }));
+  }
+
+  async getPasswordResetStatsByDay(days: number): Promise<{ date: string; count: number }[]> {
+    const result = await db.execute(sql`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*)::int as count
+      FROM password_reset_tokens
+      WHERE created_at >= NOW() - INTERVAL '${sql.raw(days.toString())} days'
+      GROUP BY DATE(created_at)
+      ORDER BY DATE(created_at) DESC
+    `);
+    
+    return result.rows.map((row: any) => ({
+      date: row.date,
+      count: row.count,
+    }));
   }
 }
 
