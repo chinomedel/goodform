@@ -164,6 +164,19 @@ export const aiConfig = pgTable("ai_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// SMTP Config table - stores SMTP email configuration
+export const smtpConfig = pgTable("smtp_config", {
+  id: varchar("id").primaryKey().default('default'),
+  host: varchar("host").notNull().default(''),
+  port: integer("port").notNull().default(587),
+  secure: boolean("secure").notNull().default(false),
+  user: text("user"),
+  password: text("password"),
+  fromEmail: varchar("from_email").notNull().default(''),
+  fromName: varchar("from_name").notNull().default(''),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Chat Messages table - stores conversation history with AI agent
 export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -339,3 +352,14 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
 });
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
+
+export const insertSmtpConfigSchema = createInsertSchema(smtpConfig).omit({
+  id: true,
+  updatedAt: true,
+}).extend({
+  host: z.string().min(1, "Host es requerido"),
+  port: z.number().min(1).max(65535, "Puerto debe estar entre 1 y 65535"),
+  fromEmail: z.string().email("Debe ser un email válido"),
+});
+export type InsertSmtpConfig = z.infer<typeof insertSmtpConfigSchema>;
+export type SmtpConfig = typeof smtpConfig.$inferSelect;
