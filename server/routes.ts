@@ -1950,6 +1950,63 @@ Responde en español de manera clara y concisa.`;
     }
   });
 
+  // AI Usage Reports - Get AI usage statistics (Super Admin & Admin Auto-host only)
+  app.get('/api/ai-usage/stats', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
+    try {
+      const provider = req.query.provider as string | undefined;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const stats = await storage.getAiUsageStats({ provider, startDate, endDate });
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching AI usage stats:", error);
+      res.status(500).json({ message: "Error al obtener estadísticas de uso de IA" });
+    }
+  });
+
+  // AI Usage Reports - Get AI usage logs (Super Admin & Admin Auto-host only)
+  app.get('/api/ai-usage/logs', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
+    try {
+      const provider = req.query.provider as string | undefined;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+
+      const logs = await storage.getAiUsageLogs({ provider, startDate, endDate });
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching AI usage logs:", error);
+      res.status(500).json({ message: "Error al obtener logs de uso de IA" });
+    }
+  });
+
+  // AI Usage - Update pricing (Super Admin & Admin Auto-host only)
+  app.post('/api/ai-usage/pricing', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
+    try {
+      const { openaiPrice, deepseekPrice } = req.body;
+
+      const updatedConfig = await storage.updateAiPricing(openaiPrice, deepseekPrice);
+      res.json(updatedConfig);
+    } catch (error) {
+      console.error("Error updating AI pricing:", error);
+      res.status(500).json({ message: "Error al actualizar precios de IA" });
+    }
+  });
+
+  // AI Config - Get current pricing (Super Admin & Admin Auto-host only)
+  app.get('/api/ai-usage/pricing', isAuthenticated, requireRole('admin_auto_host'), async (req: any, res) => {
+    try {
+      const config = await storage.getAiConfig();
+      res.json({
+        openaiPricePerMillion: config.openaiPricePerMillion,
+        deepseekPricePerMillion: config.deepseekPricePerMillion,
+      });
+    } catch (error) {
+      console.error("Error fetching AI pricing:", error);
+      res.status(500).json({ message: "Error al obtener precios de IA" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
