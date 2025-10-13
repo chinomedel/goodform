@@ -89,6 +89,29 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
     - Crypto utilities (server/crypto-utils.ts) handle encryption/decryption using Node.js crypto module
     - Permission checks before all chart mutation operations
     - API keys never exposed to frontend
+- **SMTP Email Configuration**: Secure email server configuration accessible only to Super Admin and Admin Auto-host roles.
+  - **SMTP Configuration Page**: Admin-only page (`/smtp-config`) for managing email server settings
+    - Server settings: Host, port, secure connection (SSL/TLS) toggle
+    - Sender configuration: From email and from name fields
+    - Credential management: Secure form to input and update SMTP username and password
+    - Connection testing: Test SMTP connection to verify settings are working
+    - Auto-save: Server settings save automatically when leaving each field
+    - **Secure credential storage**: SMTP credentials stored encrypted in PostgreSQL database using AES-256-CBC encryption
+      - Credentials never exposed to frontend (password input fields)
+      - Encryption key derived from DATABASE_URL or ENCRYPTION_KEY environment variable
+      - Same encryption utilities as AI config (server/crypto-utils.ts)
+  - **API Endpoints**:
+    - GET `/api/smtp-config` - Retrieve current SMTP configuration (super_admin, admin_auto_host only)
+    - PATCH `/api/smtp-config` - Update SMTP settings (super_admin, admin_auto_host only)
+    - POST `/api/smtp-config/update-credentials` - Update and encrypt credentials (super_admin, admin_auto_host only)
+    - GET `/api/smtp-config/credentials-status` - Check if credentials are configured (super_admin, admin_auto_host only)
+    - POST `/api/smtp-config/test` - Test SMTP connection (super_admin, admin_auto_host only)
+  - Database: 
+    - `smtp_config` table stores host, port, secure flag, encrypted credentials, and sender information
+  - Security: 
+    - Role-based access control (only super_admin and admin_auto_host)
+    - Encrypted credential storage
+    - SMTP credentials never exposed to frontend
 - **Auto-saving**: Implemented in the form builder with a 1-second debounce for title and description.
 - **Database Initialization**: Automatic table creation and initial data seeding (e.g., roles) on the first application start, eliminating manual migrations.
 - **Validation**: Frontend validation with React Hook Form and Zod; backend validation ensures permissions and data integrity.
@@ -120,3 +143,4 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 - **Charting Library**: Recharts
 - **Form Validation (Frontend)**: React Hook Form, Zod
 - **AI Integration**: OpenAI (GPT models), Deepseek (Chat models)
+- **Email**: Nodemailer (SMTP email sending)
