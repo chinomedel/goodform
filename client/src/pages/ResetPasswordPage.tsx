@@ -35,10 +35,16 @@ export default function ResetPasswordPage() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: async ({ token, newPassword }: { token: string; newPassword: string }) => {
-      return await apiRequest("/api/auth/reset-password", {
+      const response = await fetch("/api/auth/reset-password", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, newPassword }),
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Error al restablecer la contraseña");
+      }
+      return response.json();
     },
     onSuccess: () => {
       setShowSuccess(true);
