@@ -48,6 +48,8 @@ export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
   
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -170,6 +172,27 @@ export default function UsersPage() {
     onError: (error: Error) => {
       toast({
         title: "Error al actualizar estado",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateNameMutation = useMutation({
+    mutationFn: async ({ userId, firstName, lastName }: { userId: string; firstName?: string; lastName?: string }) => {
+      const res = await apiRequest("PATCH", `/api/users/${userId}/name`, { firstName, lastName });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Nombre actualizado",
+        description: "El nombre del usuario ha sido actualizado correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al actualizar nombre",
         description: error.message,
         variant: "destructive",
       });
@@ -458,6 +481,8 @@ export default function UsersPage() {
                         variant="ghost"
                         onClick={() => {
                           setSelectedUser(user);
+                          setEditFirstName(user.firstName || "");
+                          setEditLastName(user.lastName || "");
                           setEditDialogOpen(true);
                         }}
                         data-testid={`button-edit-${user.id}`}
@@ -493,6 +518,55 @@ export default function UsersPage() {
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-6 py-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium">Editar Nombre</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="edit-first-name" className="text-sm text-muted-foreground">
+                      Nombre
+                    </label>
+                    <Input
+                      id="edit-first-name"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      placeholder="Nombre"
+                      data-testid="input-edit-first-name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="edit-last-name" className="text-sm text-muted-foreground">
+                      Apellido
+                    </label>
+                    <Input
+                      id="edit-last-name"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      placeholder="Apellido"
+                      data-testid="input-edit-last-name"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={() => updateNameMutation.mutate({ 
+                    userId: selectedUser.id, 
+                    firstName: editFirstName, 
+                    lastName: editLastName 
+                  })}
+                  disabled={updateNameMutation.isPending}
+                  className="w-full"
+                  data-testid="button-save-name"
+                >
+                  {updateNameMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    "Guardar Nombre"
+                  )}
+                </Button>
+              </div>
+
               <div className="space-y-3">
                 <h3 className="text-sm font-medium">Cambiar Rol</h3>
                 <Select
