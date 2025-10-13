@@ -1189,12 +1189,16 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Formulario no encontrado" });
       }
 
-      // Verificar permisos
-      if (form.creatorId !== req.user.id) {
+      // Verificar permisos de acceso
+      let hasEditPermission = false;
+      if (form.creatorId === req.user.id) {
+        hasEditPermission = true;
+      } else {
         const permission = await storage.getUserFormPermission(formId, req.user.id);
         if (!permission) {
           return res.status(403).json({ message: "No tienes permisos para acceder a este formulario" });
         }
+        hasEditPermission = permission.permission === 'editor';
       }
 
       // Obtener configuración de AI
@@ -1273,29 +1277,41 @@ Responde en español de manera clara y concisa.`;
                 );
                 break;
               case 'create_chart':
-                result = await executeCreateChart(
-                  formId,
-                  functionArgs.title,
-                  functionArgs.chartType,
-                  functionArgs.xAxisField,
-                  functionArgs.aggregationType,
-                  functionArgs.yAxisField
-                );
+                if (!hasEditPermission) {
+                  result = { error: "No tienes permisos de edición para crear gráficos" };
+                } else {
+                  result = await executeCreateChart(
+                    formId,
+                    functionArgs.title,
+                    functionArgs.chartType,
+                    functionArgs.xAxisField,
+                    functionArgs.aggregationType,
+                    functionArgs.yAxisField
+                  );
+                }
                 break;
               case 'update_chart':
-                result = await executeUpdateChart(
-                  functionArgs.chartId,
-                  {
-                    title: functionArgs.title,
-                    chartType: functionArgs.chartType,
-                    xAxisField: functionArgs.xAxisField,
-                    yAxisField: functionArgs.yAxisField,
-                    aggregationType: functionArgs.aggregationType,
-                  }
-                );
+                if (!hasEditPermission) {
+                  result = { error: "No tienes permisos de edición para modificar gráficos" };
+                } else {
+                  result = await executeUpdateChart(
+                    functionArgs.chartId,
+                    {
+                      title: functionArgs.title,
+                      chartType: functionArgs.chartType,
+                      xAxisField: functionArgs.xAxisField,
+                      yAxisField: functionArgs.yAxisField,
+                      aggregationType: functionArgs.aggregationType,
+                    }
+                  );
+                }
                 break;
               case 'delete_chart':
-                result = await executeDeleteChart(functionArgs.chartId);
+                if (!hasEditPermission) {
+                  result = { error: "No tienes permisos de edición para eliminar gráficos" };
+                } else {
+                  result = await executeDeleteChart(functionArgs.chartId);
+                }
                 break;
               case 'get_existing_charts':
                 result = await executeGetExistingCharts(formId);
@@ -1371,29 +1387,41 @@ Responde en español de manera clara y concisa.`;
                 );
                 break;
               case 'create_chart':
-                result = await executeCreateChart(
-                  formId,
-                  functionArgs.title,
-                  functionArgs.chartType,
-                  functionArgs.xAxisField,
-                  functionArgs.aggregationType,
-                  functionArgs.yAxisField
-                );
+                if (!hasEditPermission) {
+                  result = { error: "No tienes permisos de edición para crear gráficos" };
+                } else {
+                  result = await executeCreateChart(
+                    formId,
+                    functionArgs.title,
+                    functionArgs.chartType,
+                    functionArgs.xAxisField,
+                    functionArgs.aggregationType,
+                    functionArgs.yAxisField
+                  );
+                }
                 break;
               case 'update_chart':
-                result = await executeUpdateChart(
-                  functionArgs.chartId,
-                  {
-                    title: functionArgs.title,
-                    chartType: functionArgs.chartType,
-                    xAxisField: functionArgs.xAxisField,
-                    yAxisField: functionArgs.yAxisField,
-                    aggregationType: functionArgs.aggregationType,
-                  }
-                );
+                if (!hasEditPermission) {
+                  result = { error: "No tienes permisos de edición para modificar gráficos" };
+                } else {
+                  result = await executeUpdateChart(
+                    functionArgs.chartId,
+                    {
+                      title: functionArgs.title,
+                      chartType: functionArgs.chartType,
+                      xAxisField: functionArgs.xAxisField,
+                      yAxisField: functionArgs.yAxisField,
+                      aggregationType: functionArgs.aggregationType,
+                    }
+                  );
+                }
                 break;
               case 'delete_chart':
-                result = await executeDeleteChart(functionArgs.chartId);
+                if (!hasEditPermission) {
+                  result = { error: "No tienes permisos de edición para eliminar gráficos" };
+                } else {
+                  result = await executeDeleteChart(functionArgs.chartId);
+                }
                 break;
               case 'get_existing_charts':
                 result = await executeGetExistingCharts(formId);
@@ -1438,17 +1466,39 @@ Responde en español de manera clara y concisa.`;
         content: message,
       });
 
+      // Generar contenido del asistente si está vacío
+      let assistantContent = aiResponse.content || '';
+      if (!assistantContent && toolResults.length > 0) {
+        // Generar un resumen de las acciones ejecutadas
+        const actions = toolResults.map(tr => {
+          if (tr.result.error) {
+            return `❌ Error en ${tr.function_name}: ${tr.result.error}`;
+          }
+          if (tr.function_name === 'create_chart') {
+            return `✅ Gráfico creado: ${tr.result.message}`;
+          }
+          if (tr.function_name === 'update_chart') {
+            return `✅ Gráfico actualizado`;
+          }
+          if (tr.function_name === 'delete_chart') {
+            return `✅ Gráfico eliminado`;
+          }
+          return `✅ Acción completada: ${tr.function_name}`;
+        });
+        assistantContent = actions.join('\n');
+      }
+
       // Guardar respuesta del asistente
       await storage.createChatMessage({
         formId,
         userId: req.user.id,
         role: 'assistant',
-        content: aiResponse.content || '',
+        content: assistantContent,
         toolCalls: toolCalls.length > 0 ? toolCalls : null,
       });
 
       res.json({
-        message: aiResponse.content,
+        message: assistantContent,
         toolCalls: toolResults,
       });
     } catch (error: any) {
