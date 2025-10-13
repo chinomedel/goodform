@@ -25,6 +25,7 @@ export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 
 export const chartTypeEnum = pgEnum('chart_type', ['bar', 'line', 'pie', 'area', 'scatter']);
 export const aggregationTypeEnum = pgEnum('aggregation_type', ['count', 'sum', 'avg', 'min', 'max']);
 export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'deepseek']);
+export const chatRoleEnum = pgEnum('chat_role', ['user', 'assistant', 'system']);
 
 // Session storage table - used by passport-local for session management
 export const sessions = pgTable(
@@ -163,6 +164,17 @@ export const aiConfig = pgTable("ai_config", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Chat Messages table - stores conversation history with AI agent
+export const chatMessages = pgTable("chat_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  role: chatRoleEnum("role").notNull(),
+  content: text("content").notNull(),
+  toolCalls: jsonb("tool_calls"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const rolesRelations = relations(roles, ({ many }) => ({
   users: many(users),
@@ -187,6 +199,7 @@ export const formsRelations = relations(forms, ({ one, many }) => ({
   permissions: many(formPermissions),
   responses: many(formResponses),
   charts: many(charts),
+  chatMessages: many(chatMessages),
 }));
 
 export const formFieldsRelations = relations(formFields, ({ one }) => ({
@@ -222,6 +235,17 @@ export const chartsRelations = relations(charts, ({ one }) => ({
   form: one(forms, {
     fields: [charts.formId],
     references: [forms.id],
+  }),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  form: one(forms, {
+    fields: [chatMessages.formId],
+    references: [forms.id],
+  }),
+  user: one(users, {
+    fields: [chatMessages.userId],
+    references: [users.id],
   }),
 }));
 
@@ -308,3 +332,10 @@ export const insertAiConfigSchema = createInsertSchema(aiConfig).omit({
 });
 export type InsertAiConfig = z.infer<typeof insertAiConfigSchema>;
 export type AiConfig = typeof aiConfig.$inferSelect;
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
