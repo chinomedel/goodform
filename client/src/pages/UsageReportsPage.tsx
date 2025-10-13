@@ -1,11 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, BarChart3, Shield } from "lucide-react";
+import { Loader2, BarChart3, Shield, AlertCircle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useAuth } from "@/hooks/use-auth";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function UsageReportsPage() {
+  const { user } = useAuth();
+
+  // Check if user is admin (super_admin or admin_auto_host)
+  const isAdmin = user?.isSuperAdmin || user?.roleId === 'admin_auto_host' || user?.roleId === 'super_admin';
+
   const { data: loginStats, isLoading: isLoadingLogins } = useQuery<{ date: string; count: number }[]>({
     queryKey: ["/api/reports/logins"],
     queryFn: async () => {
@@ -29,6 +36,21 @@ export default function UsageReportsPage() {
   });
 
   const isLoading = isLoadingLogins || isLoadingResets;
+
+  // Check authorization first
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acceso Denegado</AlertTitle>
+          <AlertDescription>
+            No tienes permisos para acceder a esta sección. Esta página está disponible solo para Super Admin y Admin Auto-host.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   // Format data for charts
   const loginChartData = loginStats?.map(stat => ({
