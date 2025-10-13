@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, UserPlus } from "lucide-react";
+import { Loader2, Users, UserPlus, Edit, ShieldAlert, Trash2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { User, insertUserSchema } from "@shared/schema";
@@ -46,6 +46,8 @@ import { useState, useEffect, useMemo } from "react";
 export default function UsersPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -151,6 +153,29 @@ export default function UsersPage() {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ userId, isDeleted, blockReason }: { userId: string; isDeleted?: boolean; blockReason?: 'non_payment' | 'login_attempts' | 'general' | null }) => {
+      const res = await apiRequest("PATCH", `/api/users/${userId}/status`, { isDeleted, blockReason });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setEditDialogOpen(false);
+      setSelectedUser(null);
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del usuario ha sido actualizado correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al actualizar estado",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: CreateUserFormData) => {
     createUserMutation.mutate(data);
   };
@@ -173,6 +198,38 @@ export default function UsersPage() {
     return (
       <Badge variant={variants[role] || "outline"} data-testid={`badge-role-${role}`}>
         {labels[role] || role}
+      </Badge>
+    );
+  };
+
+  const getStatusBadge = (user: User) => {
+    if (user.isDeleted) {
+      return (
+        <Badge variant="destructive" data-testid={`badge-status-${user.id}`}>
+          <Trash2 className="h-3 w-3 mr-1" />
+          Eliminado
+        </Badge>
+      );
+    }
+    
+    if (user.blockReason) {
+      const labels: Record<string, string> = {
+        non_payment: "Bloqueado - No Pago",
+        login_attempts: "Bloqueado - Intentos",
+        general: "Bloqueado - General",
+      };
+      return (
+        <Badge variant="destructive" data-testid={`badge-status-${user.id}`}>
+          <ShieldAlert className="h-3 w-3 mr-1" />
+          {labels[user.blockReason] || "Bloqueado"}
+        </Badge>
+      );
+    }
+    
+    return (
+      <Badge variant="outline" data-testid={`badge-status-${user.id}`}>
+        <ShieldCheck className="h-3 w-3 mr-1" />
+        Activo
       </Badge>
     );
   };
@@ -365,9 +422,10 @@ export default function UsersPage() {
                 <TableRow>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Rol Actual</TableHead>
-                  <TableHead>Cambiar Rol</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead>Fecha de Registro</TableHead>
+                  <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -384,25 +442,7 @@ export default function UsersPage() {
                       {user.email}
                     </TableCell>
                     <TableCell>{getRoleBadge(user.roleId)}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={user.roleId}
-                        onValueChange={(newRoleId) =>
-                          updateRoleMutation.mutate({ userId: user.id, roleId: newRoleId })
-                        }
-                        disabled={updateRoleMutation.isPending}
-                      >
-                        <SelectTrigger className="w-40" data-testid={`select-role-${user.id}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin_auto_host">Admin Auto-Host</SelectItem>
-                          <SelectItem value="visualizador_auto_host">Visualizador Auto-Host</SelectItem>
-                          <SelectItem value="super_admin">Super Admin</SelectItem>
-                          <SelectItem value="cliente_saas">Cliente SaaS</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
+                    <TableCell>{getStatusBadge(user)}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {user.createdAt
                         ? new Date(user.createdAt).toLocaleDateString("es-ES", {
@@ -411,6 +451,20 @@ export default function UsersPage() {
                             day: "numeric",
                           })
                         : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setEditDialogOpen(true);
+                        }}
+                        data-testid={`button-edit-${user.id}`}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -427,6 +481,118 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit User Status Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]" data-testid="dialog-edit-user">
+          <DialogHeader>
+            <DialogTitle>Editar Usuario</DialogTitle>
+            <DialogDescription>
+              Gestionar el estado y permisos de {selectedUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-6 py-4">
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium">Cambiar Rol</h3>
+                <Select
+                  value={selectedUser.roleId}
+                  onValueChange={(newRoleId) =>
+                    updateRoleMutation.mutate({ userId: selectedUser.id, roleId: newRoleId })
+                  }
+                  disabled={updateRoleMutation.isPending}
+                >
+                  <SelectTrigger data-testid="select-edit-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin_auto_host">Admin Auto-Host</SelectItem>
+                    <SelectItem value="visualizador_auto_host">Visualizador Auto-Host</SelectItem>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                    <SelectItem value="cliente_saas">Cliente SaaS</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium">Estado del Usuario</h3>
+                <div className="grid gap-2">
+                  <Button
+                    variant={!selectedUser.isDeleted && !selectedUser.blockReason ? "default" : "outline"}
+                    className="justify-start"
+                    onClick={() => updateStatusMutation.mutate({ 
+                      userId: selectedUser.id, 
+                      isDeleted: false, 
+                      blockReason: null 
+                    })}
+                    disabled={updateStatusMutation.isPending}
+                    data-testid="button-activate"
+                  >
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                    Activo
+                  </Button>
+                  <Button
+                    variant={selectedUser.blockReason === 'non_payment' ? "destructive" : "outline"}
+                    className="justify-start"
+                    onClick={() => updateStatusMutation.mutate({ 
+                      userId: selectedUser.id, 
+                      isDeleted: false,
+                      blockReason: 'non_payment' 
+                    })}
+                    disabled={updateStatusMutation.isPending}
+                    data-testid="button-block-payment"
+                  >
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                    Bloquear por No Pago
+                  </Button>
+                  <Button
+                    variant={selectedUser.blockReason === 'login_attempts' ? "destructive" : "outline"}
+                    className="justify-start"
+                    onClick={() => updateStatusMutation.mutate({ 
+                      userId: selectedUser.id, 
+                      isDeleted: false,
+                      blockReason: 'login_attempts' 
+                    })}
+                    disabled={updateStatusMutation.isPending}
+                    data-testid="button-block-attempts"
+                  >
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                    Bloquear por Intentos de Inicio
+                  </Button>
+                  <Button
+                    variant={selectedUser.blockReason === 'general' ? "destructive" : "outline"}
+                    className="justify-start"
+                    onClick={() => updateStatusMutation.mutate({ 
+                      userId: selectedUser.id, 
+                      isDeleted: false,
+                      blockReason: 'general' 
+                    })}
+                    disabled={updateStatusMutation.isPending}
+                    data-testid="button-block-general"
+                  >
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                    Bloqueo General
+                  </Button>
+                  <Button
+                    variant={selectedUser.isDeleted ? "destructive" : "outline"}
+                    className="justify-start"
+                    onClick={() => updateStatusMutation.mutate({ 
+                      userId: selectedUser.id, 
+                      isDeleted: true,
+                      blockReason: null 
+                    })}
+                    disabled={updateStatusMutation.isPending}
+                    data-testid="button-delete"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Eliminar Usuario
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

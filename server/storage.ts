@@ -62,6 +62,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, roleId: string): Promise<User>;
   updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
+  updateUserStatus(userId: string, data: { isDeleted?: boolean; blockReason?: 'non_payment' | 'login_attempts' | 'general' | null; blockedAt?: Date | null }): Promise<User>;
   
   // Form operations
   createForm(form: InsertForm): Promise<Form>;
@@ -226,6 +227,15 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserStatus(userId: string, data: { isDeleted?: boolean; blockReason?: 'non_payment' | 'login_attempts' | 'general' | null; blockedAt?: Date | null }): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...data, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     return user;

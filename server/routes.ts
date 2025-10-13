@@ -359,6 +359,31 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/users/:userId/status', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { isDeleted, blockReason } = req.body;
+
+      const updateData: { isDeleted?: boolean; blockReason?: 'non_payment' | 'login_attempts' | 'general' | null; blockedAt?: Date | null } = {};
+
+      if (typeof isDeleted === 'boolean') {
+        updateData.isDeleted = isDeleted;
+      }
+
+      if (blockReason !== undefined) {
+        updateData.blockReason = blockReason;
+        updateData.blockedAt = blockReason ? new Date() : null;
+      }
+
+      const user = await storage.updateUserStatus(userId, updateData);
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+      res.status(500).json({ message: "Error al actualizar el estado del usuario" });
+    }
+  });
+
   // Form routes
   app.post('/api/forms', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), checkFormLimit, async (req: any, res) => {
     try {
