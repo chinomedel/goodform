@@ -78,6 +78,22 @@ export function setupAuth(app: Express) {
           if (!user || !(await comparePasswords(password, user.password))) {
             return done(null, false, { message: 'Email o contraseña incorrectos' });
           }
+          
+          // Check if user is deleted
+          if (user.isDeleted) {
+            return done(null, false, { message: 'Usuario eliminado. Contacta al administrador.' });
+          }
+          
+          // Check if user is blocked
+          if (user.blockReason) {
+            const blockMessages = {
+              non_payment: 'Usuario bloqueado por falta de pago. Contacta al administrador.',
+              login_attempts: 'Usuario bloqueado por múltiples intentos fallidos de inicio de sesión. Contacta al administrador.',
+              general: 'Usuario bloqueado. Contacta al administrador.'
+            };
+            return done(null, false, { message: blockMessages[user.blockReason] || 'Usuario bloqueado. Contacta al administrador.' });
+          }
+          
           return done(null, user);
         } catch (error) {
           return done(error);
@@ -90,6 +106,13 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
+      
+      // Check if user is deleted or blocked
+      if (user && (user.isDeleted || user.blockReason)) {
+        // Return null to invalidate the session
+        return done(null, null);
+      }
+      
       done(null, user);
     } catch (error) {
       done(error);

@@ -26,6 +26,7 @@ export const chartTypeEnum = pgEnum('chart_type', ['bar', 'line', 'pie', 'area',
 export const aggregationTypeEnum = pgEnum('aggregation_type', ['count', 'sum', 'avg', 'min', 'max']);
 export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'deepseek']);
 export const chatRoleEnum = pgEnum('chat_role', ['user', 'assistant', 'system']);
+export const blockReasonEnum = pgEnum('block_reason', ['non_payment', 'login_attempts', 'general']);
 
 // Session storage table - used by passport-local for session management
 export const sessions = pgTable(
@@ -56,6 +57,9 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   roleId: varchar("role_id").notNull().references(() => roles.id).default('cliente_saas'),
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  blockReason: blockReasonEnum("block_reason"),
+  blockedAt: timestamp("blocked_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
