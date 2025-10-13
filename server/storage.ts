@@ -12,6 +12,7 @@ import {
   aiConfig,
   smtpConfig,
   chatMessages,
+  passwordResetTokens,
   type User,
   type InsertUser,
   type Role,
@@ -38,6 +39,8 @@ import {
   type InsertSmtpConfig,
   type ChatMessage,
   type InsertChatMessage,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -55,6 +58,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserRole(userId: string, roleId: string): Promise<User>;
+  updateUserPassword(userId: string, hashedPassword: string): Promise<User>;
   
   // Form operations
   createForm(form: InsertForm): Promise<Form>;
@@ -134,6 +138,12 @@ export interface IStorage {
   // Chat operations
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   getChatHistory(formId: string): Promise<ChatMessage[]>;
+  
+  // Password Reset Token operations
+  createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  markTokenAsUsed(token: string): Promise<void>;
+  deleteExpiredTokens(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -197,6 +207,15 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .update(users)
       .set({ roleId, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     return user;
@@ -637,6 +656,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(chatMessages.formId, formId))
       .orderBy(chatMessages.createdAt);
     return messages;
+  }
+
+  // Password Reset Token operations
+  async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    const [token] = await db
+      .insert(passwordResetTokens)
+      .values(tokenData)
+      .returning();
+    return token;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const [resetToken] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        sql`${passwordResetTokens.usedAt} IS NULL`,
+        sql`${passwordResetTokens.expiresAt} > NOW()`
+      ));
+    return resetToken;
+  }
+
+  async markTokenAsUsed(token: string): Promise<void> {
+    await db
+      .update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.token, token));
+  }
+
+  async deleteExpiredTokens(): Promise<void> {
+    await db
+      .delete(passwordResetTokens)
+      .where(sql`${passwordResetTokens.expiresAt} < NOW()`);
   }
 }
 
