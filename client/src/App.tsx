@@ -22,6 +22,8 @@ import LicensesPage from "@/pages/LicensesPage";
 import AiConfigPage from "@/pages/AiConfigPage";
 import SmtpConfigPage from "@/pages/SmtpConfigPage";
 import AuthPage from "@/pages/auth-page";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import SetupPage from "@/pages/SetupPage";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
@@ -84,6 +86,8 @@ function Router() {
       <Route path="/setup" component={SetupPage} />
       <Route path="/public/:id" component={PublicFormPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       
       {/* Protected routes */}
       <ProtectedRoute path="/" component={AuthenticatedApp} />
