@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import ChartBuilder from "@/components/ChartBuilder";
 import ChartRenderer from "@/components/ChartRenderer";
+import { ChatAgent } from "@/components/ChatAgent";
 import { useToast } from "@/hooks/use-toast";
 import type { Chart } from "@shared/schema";
 
@@ -143,6 +144,9 @@ export default function FormResponsesPage() {
           <TabsTrigger value="charts" data-testid="tab-charts">
             Gráficos ({charts?.length || 0})
           </TabsTrigger>
+          <TabsTrigger value="agent" data-testid="tab-agent">
+            Agente Analista
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="responses" className="space-y-4">
@@ -261,6 +265,10 @@ export default function FormResponsesPage() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="agent" className="space-y-4">
+          <ChatAgent formId={id!} />
         </TabsContent>
       </Tabs>
     </div>

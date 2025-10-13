@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react/query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export function ChatAgent({ formId }: ChatAgentProps) {
       const response = await apiRequest("POST", `/api/forms/${formId}/chat`, { message: msg });
       return await response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       refetch();
       queryClient.invalidateQueries({ queryKey: ['/api/forms', formId, 'charts'] });
       
