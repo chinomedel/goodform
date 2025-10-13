@@ -165,7 +165,23 @@ export const aiConfig = pgTable("ai_config", {
   activeProvider: aiProviderEnum("active_provider").notNull().default('openai'),
   openaiApiKey: text("openai_api_key"),
   deepseekApiKey: text("deepseek_api_key"),
+  openaiPricePerMillion: integer("openai_price_per_million").notNull().default(2000), // Price in cents per million tokens
+  deepseekPricePerMillion: integer("deepseek_price_per_million").notNull().default(140), // Price in cents per million tokens
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// AI Usage Logs table - stores token usage for AI providers
+export const aiUsageLogs = pgTable("ai_usage_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: aiProviderEnum("provider").notNull(),
+  model: varchar("model").notNull(),
+  formId: varchar("form_id").references(() => forms.id, { onDelete: 'set null' }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  promptTokens: integer("prompt_tokens").notNull().default(0),
+  completionTokens: integer("completion_tokens").notNull().default(0),
+  totalTokens: integer("total_tokens").notNull().default(0),
+  estimatedCost: integer("estimated_cost").notNull().default(0), // Cost in cents
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // SMTP Config table - stores SMTP email configuration
@@ -279,6 +295,17 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
   user: one(users, {
     fields: [chatMessages.userId],
+    references: [users.id],
+  }),
+}));
+
+export const aiUsageLogsRelations = relations(aiUsageLogs, ({ one }) => ({
+  form: one(forms, {
+    fields: [aiUsageLogs.formId],
+    references: [forms.id],
+  }),
+  user: one(users, {
+    fields: [aiUsageLogs.userId],
     references: [users.id],
   }),
 }));
@@ -399,3 +426,10 @@ export const insertLoginLogSchema = createInsertSchema(loginLogs).omit({
 });
 export type InsertLoginLog = z.infer<typeof insertLoginLogSchema>;
 export type LoginLog = typeof loginLogs.$inferSelect;
+
+export const insertAiUsageLogSchema = createInsertSchema(aiUsageLogs).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAiUsageLog = z.infer<typeof insertAiUsageLogSchema>;
+export type AiUsageLog = typeof aiUsageLogs.$inferSelect;
