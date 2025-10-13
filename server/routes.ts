@@ -1571,6 +1571,22 @@ Responde en español de manera clara y concisa.`;
 
         aiResponse = completion.choices[0].message;
 
+        // Registrar uso de tokens
+        if (completion.usage) {
+          const pricePerMillion = aiConfig.openaiPricePerMillion || 2000;
+          const estimatedCost = Math.round((completion.usage.total_tokens / 1000000) * pricePerMillion);
+          await storage.createAiUsageLog({
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+            formId,
+            userId: req.user.id,
+            promptTokens: completion.usage.prompt_tokens || 0,
+            completionTokens: completion.usage.completion_tokens || 0,
+            totalTokens: completion.usage.total_tokens || 0,
+            estimatedCost,
+          });
+        }
+
         // Ejecutar tool calls si existen
         if (aiResponse.tool_calls) {
           toolCalls = aiResponse.tool_calls;
@@ -1659,6 +1675,22 @@ Responde en español de manera clara y concisa.`;
           });
 
           aiResponse = secondCompletion.choices[0].message;
+
+          // Registrar uso de tokens de la segunda llamada
+          if (secondCompletion.usage) {
+            const pricePerMillion = aiConfig.openaiPricePerMillion || 2000;
+            const estimatedCost = Math.round((secondCompletion.usage.total_tokens / 1000000) * pricePerMillion);
+            await storage.createAiUsageLog({
+              provider: 'openai',
+              model: 'gpt-4o-mini',
+              formId,
+              userId: req.user.id,
+              promptTokens: secondCompletion.usage.prompt_tokens || 0,
+              completionTokens: secondCompletion.usage.completion_tokens || 0,
+              totalTokens: secondCompletion.usage.total_tokens || 0,
+              estimatedCost,
+            });
+          }
         }
       } else if (aiConfig.activeProvider === 'deepseek') {
         const OpenAI = (await import('openai')).default;
@@ -1680,6 +1712,22 @@ Responde en español de manera clara y concisa.`;
         });
 
         aiResponse = completion.choices[0].message;
+
+        // Registrar uso de tokens
+        if (completion.usage) {
+          const pricePerMillion = aiConfig.deepseekPricePerMillion || 140;
+          const estimatedCost = Math.round((completion.usage.total_tokens / 1000000) * pricePerMillion);
+          await storage.createAiUsageLog({
+            provider: 'deepseek',
+            model: 'deepseek-chat',
+            formId,
+            userId: req.user.id,
+            promptTokens: completion.usage.prompt_tokens || 0,
+            completionTokens: completion.usage.completion_tokens || 0,
+            totalTokens: completion.usage.total_tokens || 0,
+            estimatedCost,
+          });
+        }
 
         // Ejecutar tool calls si existen
         if (aiResponse.tool_calls) {
@@ -1769,6 +1817,22 @@ Responde en español de manera clara y concisa.`;
           });
 
           aiResponse = secondCompletion.choices[0].message;
+
+          // Registrar uso de tokens de la segunda llamada
+          if (secondCompletion.usage) {
+            const pricePerMillion = aiConfig.deepseekPricePerMillion || 140;
+            const estimatedCost = Math.round((secondCompletion.usage.total_tokens / 1000000) * pricePerMillion);
+            await storage.createAiUsageLog({
+              provider: 'deepseek',
+              model: 'deepseek-chat',
+              formId,
+              userId: req.user.id,
+              promptTokens: secondCompletion.usage.prompt_tokens || 0,
+              completionTokens: secondCompletion.usage.completion_tokens || 0,
+              totalTokens: secondCompletion.usage.total_tokens || 0,
+              estimatedCost,
+            });
+          }
         }
       }
 
