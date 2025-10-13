@@ -17,6 +17,19 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 ### Technical Implementations
 - **Dual Form Builder**: Supports both visual drag-and-drop and code-based (HTML/CSS/JS) form creation with a live editor and real-time preview, including auto-saving.
 - **Authentication & Authorization**: Email/password authentication using Passport-local with `scrypt` hashing. Role-based access control (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas) and granular form-level permissions (Owner, Editor, Viewer).
+- **User Management & Blocking States**: Super Admin and Admin Auto-host can manage user states for access control.
+  - **User States**:
+    - `isDeleted`: Boolean flag marking users as deleted
+    - `blockReason`: Enum with blocking reasons ('non_payment', 'login_attempts', 'general')
+    - `blockedAt`: Timestamp when user was blocked
+  - **Authentication Enforcement**:
+    - Login validation checks for deleted or blocked users before authentication
+    - Specific error messages for each block type (non-payment, login attempts, general)
+    - Active sessions are automatically invalidated when users are blocked or deleted
+    - Blocked/deleted users cannot log in or access the system
+  - **Database Schema**:
+    - `block_reason` enum type with values: non_payment, login_attempts, general
+    - User table columns: is_deleted (boolean NOT NULL DEFAULT false), block_reason (nullable), blocked_at (nullable timestamp)
 - **Data Export**: Exports form responses to Excel using ExcelJS.
 - **Real-time Analytics**: Customizable charts (bar, line, pie, area, scatter) powered by Recharts, supporting various aggregation types and cross-analysis for both visual and code-based forms. Features an interactive ChartBuilder UI and API for chart management.
 - **AI Integration**: Supports multiple AI providers (OpenAI, Deepseek) configured via an admin page. Features an AI Analyst Agent integrated into form responses for natural language data analysis, automatic chart creation/editing/deletion via function calls, and persistent chat history. API keys are securely stored encrypted in PostgreSQL.
