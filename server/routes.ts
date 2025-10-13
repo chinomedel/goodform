@@ -384,6 +384,30 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/users/:userId/name', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { firstName, lastName } = req.body;
+
+      const updateData: { firstName?: string; lastName?: string } = {};
+
+      if (firstName !== undefined) {
+        updateData.firstName = firstName;
+      }
+
+      if (lastName !== undefined) {
+        updateData.lastName = lastName;
+      }
+
+      const user = await storage.updateUserName(userId, updateData);
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user name:", error);
+      res.status(500).json({ message: "Error al actualizar el nombre del usuario" });
+    }
+  });
+
   // Form routes
   app.post('/api/forms', isAuthenticated, requireRole('admin_auto_host', 'super_admin', 'cliente_saas'), checkFormLimit, async (req: any, res) => {
     try {
