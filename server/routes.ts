@@ -1046,6 +1046,23 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Public configuration (no authentication required)
+  app.get('/api/public-config', async (req: any, res) => {
+    try {
+      const config = await storage.getAppConfig();
+      // Only return public fields
+      res.json({
+        appName: config.appName,
+        logoUrl: config.logoUrl,
+        faviconUrl: config.faviconUrl,
+        primaryColor: config.primaryColor,
+      });
+    } catch (error) {
+      console.error("Error fetching public config:", error);
+      res.status(500).json({ message: "Failed to fetch configuration" });
+    }
+  });
+
   // App configuration (Admin only)
   app.get('/api/config', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {

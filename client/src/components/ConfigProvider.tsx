@@ -5,7 +5,7 @@ import { hexToHSL } from "@/lib/color-utils";
 
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const { data: config } = useQuery<AppConfig>({
-    queryKey: ["/api/config"],
+    queryKey: ["/api/public-config"],
   });
 
   useEffect(() => {

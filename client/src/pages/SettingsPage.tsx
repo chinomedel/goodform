@@ -45,6 +45,7 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/public-config"] });
       toast({
         title: "Configuración actualizada",
         description: "Los cambios se han guardado correctamente",
