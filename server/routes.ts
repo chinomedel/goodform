@@ -1066,6 +1066,106 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // SMTP Configuration endpoints (Super Admin and Admin Auto-host only)
+  app.get('/api/smtp-config', isAuthenticated, requireRole('super_admin', 'admin_auto_host'), async (req: any, res) => {
+    try {
+      const config = await storage.getSmtpConfig();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching SMTP config:", error);
+      res.status(500).json({ message: "Error al obtener configuración SMTP" });
+    }
+  });
+
+  app.patch('/api/smtp-config', isAuthenticated, requireRole('super_admin', 'admin_auto_host'), async (req: any, res) => {
+    try {
+      const { host, port, secure, fromEmail, fromName } = req.body;
+      
+      const updateData: any = {};
+      if (host !== undefined) updateData.host = host;
+      if (port !== undefined) updateData.port = port;
+      if (secure !== undefined) updateData.secure = secure;
+      if (fromEmail !== undefined) updateData.fromEmail = fromEmail;
+      if (fromName !== undefined) updateData.fromName = fromName;
+
+      const updatedConfig = await storage.updateSmtpConfig(updateData);
+      res.json(updatedConfig);
+    } catch (error) {
+      console.error("Error updating SMTP config:", error);
+      res.status(500).json({ message: "Error al actualizar configuración SMTP" });
+    }
+  });
+
+  app.post('/api/smtp-config/update-credentials', isAuthenticated, requireRole('super_admin', 'admin_auto_host'), async (req: any, res) => {
+    try {
+      const { user, password } = req.body;
+      
+      await storage.updateSmtpCredentials(user, password);
+      
+      res.json({ 
+        success: true, 
+        message: "Credenciales SMTP actualizadas correctamente" 
+      });
+    } catch (error: any) {
+      console.error("Error updating SMTP credentials:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error al actualizar credenciales SMTP: ${error.message}` 
+      });
+    }
+  });
+
+  app.get('/api/smtp-config/credentials-status', isAuthenticated, requireRole('super_admin', 'admin_auto_host'), async (req: any, res) => {
+    try {
+      const config = await storage.getSmtpConfig();
+      res.json({
+        hasUser: !!config.user,
+        hasPassword: !!config.password
+      });
+    } catch (error) {
+      console.error("Error checking SMTP credentials status:", error);
+      res.status(500).json({ message: "Error al verificar estado de credenciales SMTP" });
+    }
+  });
+
+  app.post('/api/smtp-config/test', isAuthenticated, requireRole('super_admin', 'admin_auto_host'), async (req: any, res) => {
+    try {
+      const config = await storage.getSmtpConfig();
+      const credentials = await storage.getDecryptedSmtpCredentials();
+
+      if (!config.host || !config.fromEmail) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Configuración SMTP incompleta. Se requiere host y email" 
+        });
+      }
+
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.default.createTransport({
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        auth: credentials.user && credentials.password ? {
+          user: credentials.user,
+          pass: credentials.password
+        } : undefined
+      });
+
+      await transporter.verify();
+
+      res.json({ 
+        success: true, 
+        message: "Conexión SMTP exitosa" 
+      });
+    } catch (error: any) {
+      console.error("Error testing SMTP connection:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Error al probar conexión SMTP: ${error.message}` 
+      });
+    }
+  });
+
   // Chart endpoints
   app.post('/api/forms/:formId/charts', isAuthenticated, async (req: any, res) => {
     try {
