@@ -20,6 +20,7 @@ import UsersPage from "@/pages/UsersPage";
 import SettingsPage from "@/pages/SettingsPage";
 import LicensesPage from "@/pages/LicensesPage";
 import AiConfigPage from "@/pages/AiConfigPage";
+import SmtpConfigPage from "@/pages/SmtpConfigPage";
 import AuthPage from "@/pages/auth-page";
 import SetupPage from "@/pages/SetupPage";
 import NotFound from "@/pages/not-found";
@@ -66,6 +67,7 @@ function AuthenticatedApp() {
               <Route path="/settings" component={SettingsPage} />
               <Route path="/licenses" component={LicensesPage} />
               <Route path="/ai-config" component={AiConfigPage} />
+              <Route path="/smtp-config" component={SmtpConfigPage} />
               <Route component={NotFound} />
             </Switch>
           </main>
@@ -95,6 +97,7 @@ function Router() {
       <ProtectedRoute path="/settings" component={AuthenticatedApp} />
       <ProtectedRoute path="/licenses" component={AuthenticatedApp} />
       <ProtectedRoute path="/ai-config" component={AuthenticatedApp} />
+      <ProtectedRoute path="/smtp-config" component={AuthenticatedApp} />
       
       {/* Fallback */}
       <Route component={NotFound} />
