@@ -66,7 +66,7 @@ function AuthenticatedApp() {
               <Route path="/forms/:id/responses" component={FormResponsesPage} />
               <Route path="/preview/:id" component={PreviewFormPage} />
               <Route path="/users" component={UsersPage} />
-              <Route path="/settings" component={SettingsPage} />
+              <Route path="/design-settings" component={SettingsPage} />
               <Route path="/licenses" component={LicensesPage} />
               <Route path="/ai-config" component={AiConfigPage} />
               <Route path="/smtp-config" component={SmtpConfigPage} />
@@ -98,7 +98,7 @@ function Router() {
       <ProtectedRoute path="/forms/:id/responses" component={AuthenticatedApp} />
       <ProtectedRoute path="/preview/:id" component={AuthenticatedApp} />
       <ProtectedRoute path="/users" component={AuthenticatedApp} />
-      <ProtectedRoute path="/settings" component={AuthenticatedApp} />
+      <ProtectedRoute path="/design-settings" component={AuthenticatedApp} />
       <ProtectedRoute path="/licenses" component={AuthenticatedApp} />
       <ProtectedRoute path="/ai-config" component={AuthenticatedApp} />
       <ProtectedRoute path="/smtp-config" component={AuthenticatedApp} />

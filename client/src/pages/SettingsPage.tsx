@@ -77,9 +77,9 @@ export default function SettingsPage() {
       <div className="flex items-center gap-3">
         <SettingsIcon className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-semibold">Configuración</h1>
+          <h1 className="text-3xl font-semibold">Diseño de Aplicación</h1>
           <p className="text-muted-foreground">
-            Configura la apariencia y branding de la aplicación
+            Diseño General de la Aplicación
           </p>
         </div>
       </div>
