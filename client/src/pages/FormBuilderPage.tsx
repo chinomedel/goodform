@@ -3,8 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
 import { Card } from "@/components/ui/card";
-import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X, Copy } from "lucide-react";
+import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X, Copy, Bot } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { FormBuilderChat } from "@/components/FormBuilderChat";
 import {
   Tabs,
   TabsContent,
@@ -164,6 +165,7 @@ export default function FormBuilderPage() {
   const [publishStartDate, setPublishStartDate] = useState<string>("");
   const [publishEndDate, setPublishEndDate] = useState<string>("");
   const [iframeHeight, setIframeHeight] = useState<string>("600");
+  const [showChat, setShowChat] = useState<boolean>(true);
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -497,6 +499,21 @@ export default function FormBuilderPage() {
     
     if (formId) {
       updateFormMutation.mutate({ urlParams: updatedParams });
+    }
+  };
+
+  const handleInsertCode = (html: string, css: string, js: string) => {
+    if (html) setCustomHtml(html);
+    if (css) setCustomCss(css);
+    if (js) setCustomJs(js);
+    
+    // Auto-save the changes
+    if (formId) {
+      updateFormMutation.mutate({
+        customHtml: html || customHtml,
+        customCss: css || customCss,
+        customJs: js || customJs,
+      });
     }
   };
 
@@ -1092,33 +1109,44 @@ export default function FormBuilderPage() {
         </Dialog>
           </>
         ) : (
-          <main className="flex-1 overflow-y-auto p-8">
-            <div className="max-w-5xl mx-auto space-y-6">
-              <Card className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label>Descripción del formulario</Label>
-                    <Input
-                      value={formDescription}
-                      onChange={(e) => handleDescriptionChange(e.target.value)}
-                      placeholder="Descripción opcional del formulario"
-                      className="mt-2"
-                      data-testid="input-form-description-code"
-                    />
+          <>
+            <main className="flex-1 overflow-y-auto p-8">
+              <div className="max-w-5xl mx-auto space-y-6">
+                <Card className="p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Descripción del formulario</Label>
+                      <Input
+                        value={formDescription}
+                        onChange={(e) => handleDescriptionChange(e.target.value)}
+                        placeholder="Descripción opcional del formulario"
+                        className="mt-2"
+                        data-testid="input-form-description-code"
+                      />
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
 
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Editor de Código Personalizado</h3>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" data-testid="button-show-instructions">
-                        <HelpCircle className="h-4 w-4 mr-2" />
-                        Ver Instrucciones
+                <Card className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Editor de Código Personalizado</h3>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowChat(!showChat)}
+                        data-testid="button-toggle-chat"
+                      >
+                        <Bot className="h-4 w-4 mr-2" />
+                        {showChat ? "Ocultar Asistente" : "Mostrar Asistente"}
                       </Button>
-                    </DialogTrigger>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" data-testid="button-show-instructions">
+                            <HelpCircle className="h-4 w-4 mr-2" />
+                            Ver Instrucciones
+                          </Button>
+                        </DialogTrigger>
                     <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Instrucciones para Formularios Personalizados</DialogTitle>
@@ -1309,8 +1337,9 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                         </div>
                       </div>
                     </DialogContent>
-                  </Dialog>
-                </div>
+                      </Dialog>
+                    </div>
+                  </div>
                 <Tabs defaultValue="html" className="w-full">
                   <TabsList className="w-full">
                     <TabsTrigger value="html" className="flex-1" data-testid="tab-html">
@@ -1373,6 +1402,16 @@ document.getElementById('customForm')?.addEventListener('submit', async function
               </Card>
             </div>
           </main>
+
+          {showChat && formId && (
+            <aside className="w-96 border-l border-border bg-muted/30 overflow-hidden flex flex-col">
+              <FormBuilderChat 
+                formId={formId}
+                onInsertCode={handleInsertCode}
+              />
+            </aside>
+          )}
+          </>
         )}
       </div>
     </div>

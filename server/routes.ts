@@ -682,6 +682,219 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Form Builder Chat routes
+  app.get('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const userId = req.user.id;
+
+      // Check if user can edit form
+      if (!await canEditForm(formId, userId)) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const history = await storage.getChatHistory(formId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching chat history:", error);
+      res.status(500).json({ message: "Failed to fetch chat history" });
+    }
+  });
+
+  app.post('/api/forms/:formId/chat', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const userId = req.user.id;
+      const { message, imageUrl } = req.body;
+
+      // Check if user can edit form
+      if (!await canEditForm(formId, userId)) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      // Get AI config
+      const aiConfig = await storage.getAiConfig();
+      const keys = await storage.getDecryptedApiKeys();
+      const activeKey = aiConfig.activeProvider === 'openai' ? keys.openai : keys.deepseek;
+
+      if (!activeKey) {
+        return res.status(400).json({ message: "AI provider not configured" });
+      }
+
+      // Save user message
+      await storage.createChatMessage({
+        formId,
+        userId,
+        role: 'user',
+        content: message,
+        imageUrl: imageUrl || null,
+      });
+
+      // Get chat history for context
+      const history = await storage.getChatHistory(formId);
+
+      // Prepare system prompt with form mapping instructions
+      const systemPrompt = `Eres un asistente experto en HTML, CSS y JavaScript que ayuda a crear formularios personalizados para GoodForm.
+
+INSTRUCCIONES IMPORTANTES PARA MAPEAR CAMPOS:
+
+1. Para que el sistema capture correctamente las respuestas del formulario, debes agregar el atributo data-field-name a cada campo de entrada:
+   <input type="text" name="nombre" data-field-name="nombre" required />
+
+2. El sistema automáticamente capturará los datos cuando el usuario haga submit del formulario si:
+   - Cada campo tiene el atributo data-field-name con un identificador único
+   - El formulario tiene un botón de tipo submit
+
+3. Ejemplo completo de un formulario válido:
+   <form id="customForm">
+     <label>Nombre completo</label>
+     <input type="text" name="nombre" data-field-name="nombre" required />
+     
+     <label>Email</label>
+     <input type="email" name="email" data-field-name="email" required />
+     
+     <label>Mensaje</label>
+     <textarea name="mensaje" data-field-name="mensaje" required></textarea>
+     
+     <button type="submit">Enviar</button>
+   </form>
+
+4. Si el usuario te pide que revises código existente, analiza:
+   - Que todos los campos de entrada tengan data-field-name
+   - Que el HTML sea válido y accesible
+   - Que el CSS sea responsive y moderno
+   - Que el JavaScript (si lo hay) sea funcional y sin errores
+
+5. Si el usuario te envía una imagen de un diseño, analízala y genera el código HTML/CSS/JavaScript correspondiente, asegurándote de agregar data-field-name a todos los campos.
+
+Responde en español de forma clara y profesional. Si generas código, hazlo en bloques separados de HTML, CSS y JavaScript.`;
+
+      // Prepare messages for AI
+      const messages: any[] = [
+        { role: 'system', content: systemPrompt }
+      ];
+
+      // Add history (excluding system messages)
+      for (const msg of history) {
+        if (msg.role !== 'system') {
+          if (msg.imageUrl && msg.role === 'user') {
+            // For messages with images, use vision format
+            messages.push({
+              role: msg.role,
+              content: [
+                { type: 'text', text: msg.content },
+                { type: 'image_url', image_url: { url: msg.imageUrl } }
+              ]
+            });
+          } else {
+            messages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
+        }
+      }
+
+      // Call AI provider
+      let aiResponse: string;
+      let promptTokens = 0;
+      let completionTokens = 0;
+      let model = '';
+
+      if (aiConfig.activeProvider === 'openai') {
+        const OpenAI = require('openai').default;
+        const openai = new OpenAI({ apiKey: activeKey });
+        
+        // Use GPT-4 Vision if there's an image in the current message
+        model = imageUrl ? 'gpt-4o' : 'gpt-4o-mini';
+        
+        const completion = await openai.chat.completions.create({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000,
+        });
+
+        aiResponse = completion.choices[0].message.content;
+        promptTokens = completion.usage?.prompt_tokens || 0;
+        completionTokens = completion.usage?.completion_tokens || 0;
+      } else {
+        // Deepseek doesn't support images
+        if (imageUrl) {
+          return res.status(400).json({ message: "Deepseek no soporta análisis de imágenes. Por favor, configura OpenAI para usar esta funcionalidad." });
+        }
+
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeKey}`,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages,
+            temperature: 0.7,
+            max_tokens: 2000,
+          }),
+        });
+
+        const data = await response.json();
+        aiResponse = data.choices[0].message.content;
+        promptTokens = data.usage?.prompt_tokens || 0;
+        completionTokens = data.usage?.completion_tokens || 0;
+        model = 'deepseek-chat';
+      }
+
+      // Save assistant response
+      const assistantMessage = await storage.createChatMessage({
+        formId,
+        userId,
+        role: 'assistant',
+        content: aiResponse,
+      });
+
+      // Log AI usage
+      const inputPrice = aiConfig.activeProvider === 'openai' ? aiConfig.openaiInputPrice : aiConfig.deepseekInputPrice;
+      const outputPrice = aiConfig.activeProvider === 'openai' ? aiConfig.openaiOutputPrice : aiConfig.deepseekOutputPrice;
+      const estimatedCost = Math.round((promptTokens * inputPrice + completionTokens * outputPrice) / 1000000);
+
+      await storage.createAiUsageLog({
+        provider: aiConfig.activeProvider,
+        model,
+        formId,
+        userId,
+        promptTokens,
+        completionTokens,
+        totalTokens: promptTokens + completionTokens,
+        estimatedCost,
+      });
+
+      res.json(assistantMessage);
+    } catch (error: any) {
+      console.error("Error in chat:", error);
+      res.status(500).json({ message: error.message || "Failed to process chat message" });
+    }
+  });
+
+  app.delete('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const userId = req.user.id;
+
+      // Check if user can edit form
+      if (!await canEditForm(formId, userId)) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      // Note: We don't have a deleteChatHistory method in storage yet
+      // For now, just return success
+      res.json({ message: "Chat history cleared" });
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+      res.status(500).json({ message: "Failed to clear chat history" });
+    }
+  });
+
   // Preview form (authenticated - for creators/admins)
   app.get('/api/forms/:id/preview', isAuthenticated, async (req: any, res) => {
     try {

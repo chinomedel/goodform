@@ -229,6 +229,7 @@ export const chatMessages = pgTable("chat_messages", {
   userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  imageUrl: text("image_url"),
   toolCalls: jsonb("tool_calls"),
   createdAt: timestamp("created_at").defaultNow(),
 });
