@@ -33,7 +33,15 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 - **Data Export**: Exports form responses to Excel using ExcelJS.
 - **Real-time Analytics**: Customizable charts (bar, line, pie, area, scatter) powered by Recharts, supporting various aggregation types and cross-analysis for both visual and code-based forms. Features an interactive ChartBuilder UI and API for chart management.
 - **AI Integration**: Supports multiple AI providers (OpenAI, Deepseek) configured via an admin page. Features two specialized AI agents with independent chat histories:
-  - **Form Builder Agent** (`agentType: 'form_builder'`): Integrated into code mode form builder, helps create HTML/CSS/JavaScript forms with GPT-4 Vision support for image-to-code conversion. Provides guidance on field mapping with `data-field-name` attributes and code review capabilities. Includes conversational interface with image upload, quick action buttons, and persistent chat history per form.
+  - **Form Builder Agent** (`agentType: 'form_builder'`): Integrated into code mode form builder via collapsible side panel, helps create HTML/CSS/JavaScript forms with GPT-4 Vision support for image-to-code conversion. Provides guidance on field mapping with `data-field-name` attributes through conversational interface. Features:
+    - **Automatic Code Insertion**: Generated code blocks are automatically inserted into HTML/CSS/JS editors
+    - **Visible Reasoning**: Agent shows its thought process before generating code and explains after
+    - **Loading Indicators**: Visual feedback while agent is working
+    - **Silent Auto-save**: Code changes are saved automatically without disrupting workflow
+    - **Mode Persistence**: Builder mode (code/visual) is maintained during auto-save operations
+    - **Image Upload**: Supports image-to-code conversion with GPT-4 Vision
+    - **Isolated Preview**: Code preview uses iframe to prevent CSS conflicts
+    - Persistent chat history per form with natural conversation flow
   - **Analyst Agent** (`agentType: 'analyst'`): Integrated into form responses page for natural language data analysis, automatic chart creation/editing/deletion via function calls, and persistent chat history. Supports complex queries and cross-field analysis.
   - API keys are securely stored encrypted in PostgreSQL. Granular token pricing system with separate fields for input tokens, output tokens, and cache tokens per provider, with cost calculation: (prompt_tokens × inputPrice + completion_tokens × outputPrice) / 1,000,000. Prices stored in cents for precision.
   - Both agents maintain separate conversation histories through `agent_type` enum field in `chatMessages` table.

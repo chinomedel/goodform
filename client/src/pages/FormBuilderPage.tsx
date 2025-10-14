@@ -15,7 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getForm, updateForm, updateFormFields, publishForm } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useParams } from "wouter";
 import type { FormField } from "@shared/schema";
@@ -206,11 +206,20 @@ export default function FormBuilderPage() {
     return new Date(year, month - 1, day, hours, minutes);
   };
 
+  // Track if this is the initial load
+  const isInitialLoadRef = useRef(true);
+
   useEffect(() => {
     if (formData) {
       setFormTitle(formData.title);
       setFormDescription(formData.description || "");
-      setBuilderMode(formData.builderMode || 'visual');
+      
+      // Only set builderMode on initial load, not on subsequent updates
+      if (isInitialLoadRef.current) {
+        setBuilderMode(formData.builderMode || 'visual');
+        isInitialLoadRef.current = false;
+      }
+      
       setCustomHtml(formData.customHtml || "");
       setCustomCss(formData.customCss || "");
       setCustomJs(formData.customJs || "");
@@ -507,12 +516,21 @@ export default function FormBuilderPage() {
     if (css) setCustomCss(css);
     if (js) setCustomJs(js);
     
-    // Auto-save the changes
+    // Auto-save the changes while maintaining current mode (silent save)
     if (formId) {
-      updateFormMutation.mutate({
+      // Use apiRequest directly to avoid mutation side effects
+      apiRequest('PATCH', `/api/forms/${formId}`, {
+        builderMode: 'code',
         customHtml: html || customHtml,
         customCss: css || customCss,
         customJs: js || customJs,
+      }).catch((error) => {
+        console.error('Error saving code:', error);
+        toast({
+          title: "Error al guardar",
+          description: "No se pudo guardar el código automáticamente",
+          variant: "destructive",
+        });
       });
     }
   };
