@@ -161,6 +161,8 @@ export default function FormBuilderPage() {
   
   const [urlParams, setUrlParams] = useState<string[]>([]);
   const [newUrlParam, setNewUrlParam] = useState("");
+  const [publishStartDate, setPublishStartDate] = useState<string>("");
+  const [publishEndDate, setPublishEndDate] = useState<string>("");
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -188,6 +190,17 @@ export default function FormBuilderPage() {
       setSubmitButtonText(formData.submitButtonText || "Enviar respuesta");
       setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
       setUrlParams(formData.urlParams || []);
+      
+      // Format dates for datetime-local input
+      if (formData.publishStartDate) {
+        const startDate = new Date(formData.publishStartDate);
+        setPublishStartDate(startDate.toISOString().slice(0, 16));
+      }
+      if (formData.publishEndDate) {
+        const endDate = new Date(formData.publishEndDate);
+        setPublishEndDate(endDate.toISOString().slice(0, 16));
+      }
+      
       setFields(
         formData.fields
           .sort((a, b) => a.order - b.order)
@@ -219,6 +232,8 @@ export default function FormBuilderPage() {
       submitButtonText?: string;
       submitButtonColor?: string;
       urlParams?: string[];
+      publishStartDate?: Date | null;
+      publishEndDate?: Date | null;
     }) =>
       updateForm(formId!, data),
     onSuccess: () => {
@@ -439,6 +454,24 @@ export default function FormBuilderPage() {
     
     if (formId) {
       updateFormMutation.mutate({ urlParams: updatedParams });
+    }
+  };
+
+  const handleStartDateChange = (dateString: string) => {
+    setPublishStartDate(dateString);
+    
+    if (formId) {
+      const date = dateString ? new Date(dateString) : null;
+      updateFormMutation.mutate({ publishStartDate: date });
+    }
+  };
+
+  const handleEndDateChange = (dateString: string) => {
+    setPublishEndDate(dateString);
+    
+    if (formId) {
+      const date = dateString ? new Date(dateString) : null;
+      updateFormMutation.mutate({ publishEndDate: date });
     }
   };
 
@@ -798,6 +831,55 @@ export default function FormBuilderPage() {
                     ? "Este formulario es público"
                     : "Solo usuarios con permisos pueden ver este formulario"}
                 </p>
+              </div>
+
+              <div className="pt-2 border-t">
+                <Label className="text-sm font-semibold">Período de Publicación</Label>
+                <p className="text-xs text-muted-foreground mt-1 mb-3">
+                  Define el rango de fechas durante el cual el formulario estará disponible públicamente
+                </p>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="publish-start-date" className="text-xs">
+                      Fecha de inicio (opcional)
+                    </Label>
+                    <Input
+                      id="publish-start-date"
+                      type="datetime-local"
+                      value={publishStartDate}
+                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      data-testid="input-publish-start-date"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="publish-end-date" className="text-xs">
+                      Fecha de fin (opcional)
+                    </Label>
+                    <Input
+                      id="publish-end-date"
+                      type="datetime-local"
+                      value={publishEndDate}
+                      onChange={(e) => handleEndDateChange(e.target.value)}
+                      data-testid="input-publish-end-date"
+                    />
+                  </div>
+                  {publishStartDate && publishEndDate && (
+                    <p className="text-xs text-muted-foreground">
+                      El formulario estará disponible desde{" "}
+                      <span className="font-medium">
+                        {new Date(publishStartDate).toLocaleDateString("es-ES", {
+                          dateStyle: "short",
+                        })}
+                      </span>{" "}
+                      hasta{" "}
+                      <span className="font-medium">
+                        {new Date(publishEndDate).toLocaleDateString("es-ES", {
+                          dateStyle: "short",
+                        })}
+                      </span>
+                    </p>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
