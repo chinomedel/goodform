@@ -1392,10 +1392,34 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                   <TabsContent value="preview" className="mt-4">
                     <Label className="mb-2 block">Vista Previa</Label>
                     <Card className="p-6 bg-muted/30">
-                      <div
-                        dangerouslySetInnerHTML={{ __html: customHtml }}
+                      <iframe
+                        srcDoc={`
+                          <!DOCTYPE html>
+                          <html>
+                            <head>
+                              <meta charset="UTF-8">
+                              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                              <style>
+                                body { 
+                                  margin: 0; 
+                                  padding: 20px; 
+                                  font-family: system-ui, -apple-system, sans-serif;
+                                }
+                                ${customCss}
+                              </style>
+                            </head>
+                            <body>
+                              ${customHtml}
+                              <script>
+                                ${customJs}
+                              </script>
+                            </body>
+                          </html>
+                        `}
+                        className="w-full min-h-[500px] border-0 rounded"
+                        title="Form Preview"
+                        sandbox="allow-scripts"
                       />
-                      <style>{customCss}</style>
                     </Card>
                   </TabsContent>
                 </Tabs>
