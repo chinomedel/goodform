@@ -217,10 +217,14 @@ export default function FormBuilderPage() {
       if (formData.publishStartDate) {
         const startDate = new Date(formData.publishStartDate);
         setPublishStartDate(toLocalDateTimeString(startDate));
+      } else {
+        setPublishStartDate("");
       }
       if (formData.publishEndDate) {
         const endDate = new Date(formData.publishEndDate);
         setPublishEndDate(toLocalDateTimeString(endDate));
+      } else {
+        setPublishEndDate("");
       }
       
       setFields(
