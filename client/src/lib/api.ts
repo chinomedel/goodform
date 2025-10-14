@@ -44,6 +44,7 @@ export async function createForm(data: { title: string; description?: string }) 
 }
 
 export async function updateForm(id: string, data: Partial<Form>) {
+  console.log('updateForm API call with data:', data);
   const response = await fetch(`/api/forms/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
