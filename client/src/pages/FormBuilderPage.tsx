@@ -931,7 +931,10 @@ export default function FormBuilderPage() {
                       id="publish-start-date"
                       type="datetime-local"
                       value={publishStartDate}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      onChange={(e) => {
+                        console.log('START DATE CHANGED:', e.target.value);
+                        handleStartDateChange(e.target.value);
+                      }}
                       data-testid="input-publish-start-date"
                     />
                   </div>
