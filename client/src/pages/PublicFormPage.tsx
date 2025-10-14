@@ -29,7 +29,7 @@ export default function PublicFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [urlParams, setUrlParams] = useState<Record<string, string>>({});
 
-  const { data: form, isLoading } = useQuery({
+  const { data: form, isLoading, error } = useQuery({
     queryKey: ['/api/public/forms', id],
     queryFn: () => getPublicForm(id!),
     enabled: !!id,
@@ -165,13 +165,32 @@ export default function PublicFormPage() {
   }
 
   if (!form) {
+    // Extract error message from the error response
+    const errorMessage = (error as any)?.message || "Formulario no encontrado o no disponible";
+    const availableFrom = (error as any)?.availableFrom;
+    const availableUntil = (error as any)?.availableUntil;
+    
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-3">
             <p className="text-center text-muted-foreground">
-              Formulario no encontrado o no disponible
+              {errorMessage}
             </p>
+            {availableFrom && (
+              <p className="text-center text-sm text-muted-foreground">
+                Disponible a partir de: {new Date(availableFrom).toLocaleDateString("es-ES", { 
+                  dateStyle: "long" 
+                })}
+              </p>
+            )}
+            {availableUntil && (
+              <p className="text-center text-sm text-muted-foreground">
+                Estuvo disponible hasta: {new Date(availableUntil).toLocaleDateString("es-ES", { 
+                  dateStyle: "long" 
+                })}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -179,6 +179,13 @@ export default function FormBuilderPage() {
     enabled: !!formId,
   });
 
+  // Helper to convert UTC date to local datetime-local format
+  const toLocalDateTimeString = (date: Date): string => {
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+    return localDate.toISOString().slice(0, 16);
+  };
+
   useEffect(() => {
     if (formData) {
       setFormTitle(formData.title);
@@ -191,14 +198,14 @@ export default function FormBuilderPage() {
       setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
       setUrlParams(formData.urlParams || []);
       
-      // Format dates for datetime-local input
+      // Format dates for datetime-local input (preserving local timezone)
       if (formData.publishStartDate) {
         const startDate = new Date(formData.publishStartDate);
-        setPublishStartDate(startDate.toISOString().slice(0, 16));
+        setPublishStartDate(toLocalDateTimeString(startDate));
       }
       if (formData.publishEndDate) {
         const endDate = new Date(formData.publishEndDate);
-        setPublishEndDate(endDate.toISOString().slice(0, 16));
+        setPublishEndDate(toLocalDateTimeString(endDate));
       }
       
       setFields(

@@ -15,7 +15,7 @@ GoodForm is a comprehensive web platform for form management, supporting both vi
 The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailwind CSS for a modern, responsive design. The aesthetic is inspired by Material Design 3 and Linear, aiming for a professional and business-oriented look. Application appearance (appName, logo, favicon, primary color) is highly customizable via an admin configuration page with real-time previews.
 
 ### Technical Implementations
-- **Dual Form Builder**: Supports both visual drag-and-drop and code-based (HTML/CSS/JS) form creation with a live editor and real-time preview, including auto-saving.
+- **Dual Form Builder**: Supports both visual drag-and-drop and code-based (HTML/CSS/JS) form creation with a live editor and real-time preview, including auto-saving. Forms support publication date ranges (optional start/end dates) to control when forms are publicly accessible.
 - **Authentication & Authorization**: Email/password authentication using Passport-local with `scrypt` hashing. Role-based access control (super_admin, admin_auto_host, visualizador_auto_host, cliente_saas) and granular form-level permissions (Owner, Editor, Viewer).
 - **User Management & Blocking States**: Super Admin and Admin Auto-host can manage user states for access control.
   - **User States**:
