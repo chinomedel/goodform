@@ -504,6 +504,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Not authorized to edit this form" });
       }
 
+      // Debug log to see what dates are being sent
+      if (req.body.publishStartDate || req.body.publishEndDate) {
+        console.log('Updating form dates:', {
+          publishStartDate: req.body.publishStartDate,
+          publishEndDate: req.body.publishEndDate
+        });
+      }
+
       const updatedForm = await storage.updateForm(id, req.body);
       res.json(updatedForm);
     } catch (error) {
