@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
 import { Card } from "@/components/ui/card";
-import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X } from "lucide-react";
+import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X, Copy } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Tabs,
@@ -211,7 +211,7 @@ export default function FormBuilderPage() {
       setCustomJs(formData.customJs || "");
       setSubmitButtonText(formData.submitButtonText || "Enviar respuesta");
       setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
-      setUrlParams(formData.urlParams || []);
+      setUrlParams(formData.urlParams ? (formData.urlParams as string[]) : []);
       
       // Format dates for datetime-local input (preserving local timezone)
       if (formData.publishStartDate) {
@@ -853,6 +853,66 @@ export default function FormBuilderPage() {
                     ? "Este formulario es público"
                     : "Solo usuarios con permisos pueden ver este formulario"}
                 </p>
+              </div>
+
+              <div className="pt-2 border-t space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">URL Pública</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Cualquier persona con este enlace puede completar el formulario
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={`${window.location.origin}/public/${formId}`}
+                      readOnly
+                      className="font-mono text-xs"
+                      data-testid="input-public-url"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/public/${formId}`);
+                        toast({
+                          title: "Copiado",
+                          description: "URL pública copiada al portapapeles",
+                        });
+                      }}
+                      data-testid="button-copy-public-url"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">URL para Usuarios Registrados</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Solo usuarios que hayan iniciado sesión pueden acceder
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={`${window.location.origin}/preview/${formId}`}
+                      readOnly
+                      className="font-mono text-xs"
+                      data-testid="input-auth-url"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/preview/${formId}`);
+                        toast({
+                          title: "Copiado",
+                          description: "URL para usuarios registrados copiada al portapapeles",
+                        });
+                      }}
+                      data-testid="button-copy-auth-url"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="pt-2 border-t">
