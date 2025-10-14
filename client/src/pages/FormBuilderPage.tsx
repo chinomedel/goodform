@@ -513,6 +513,12 @@ export default function FormBuilderPage() {
       return;
     }
 
+    // Preparar fechas de publicación
+    const startDate = publishStartDate ? fromLocalDateTimeString(publishStartDate) : null;
+    const endDate = publishEndDate ? fromLocalDateTimeString(publishEndDate) : null;
+
+    console.log('Saving with dates:', { publishStartDate, startDate, publishEndDate, endDate });
+
     if (builderMode === 'code') {
       // Guardar código personalizado
       updateFormMutation.mutate({
@@ -520,6 +526,8 @@ export default function FormBuilderPage() {
         customHtml,
         customCss,
         customJs,
+        publishStartDate: startDate,
+        publishEndDate: endDate,
       });
     } else {
       // Guardar campos visuales
@@ -533,19 +541,12 @@ export default function FormBuilderPage() {
         order: index,
       }));
 
-      updateFormMutation.mutate({ builderMode: 'visual' });
-      updateFieldsMutation.mutate(fieldsData);
-    }
-
-    // Guardar fechas de publicación si están configuradas
-    const startDate = publishStartDate ? fromLocalDateTimeString(publishStartDate) : null;
-    const endDate = publishEndDate ? fromLocalDateTimeString(publishEndDate) : null;
-    
-    if (startDate || endDate) {
       updateFormMutation.mutate({ 
-        publishStartDate: startDate, 
-        publishEndDate: endDate 
+        builderMode: 'visual',
+        publishStartDate: startDate,
+        publishEndDate: endDate,
       });
+      updateFieldsMutation.mutate(fieldsData);
     }
   };
 
