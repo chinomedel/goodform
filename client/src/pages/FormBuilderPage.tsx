@@ -163,6 +163,7 @@ export default function FormBuilderPage() {
   const [newUrlParam, setNewUrlParam] = useState("");
   const [publishStartDate, setPublishStartDate] = useState<string>("");
   const [publishEndDate, setPublishEndDate] = useState<string>("");
+  const [iframeHeight, setIframeHeight] = useState<string>("600");
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -1006,6 +1007,64 @@ export default function FormBuilderPage() {
                       </span>
                     </p>
                   )}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <Label className="text-sm font-semibold">Código de Inserción</Label>
+                <p className="text-xs text-muted-foreground mt-1 mb-3">
+                  Copia este código para insertar el formulario en tu sitio web
+                </p>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="iframe-height" className="text-xs">
+                      Altura del iframe (px)
+                    </Label>
+                    <Input
+                      id="iframe-height"
+                      type="number"
+                      value={iframeHeight}
+                      onChange={(e) => setIframeHeight(e.target.value)}
+                      min="300"
+                      max="2000"
+                      placeholder="600"
+                      className="w-full"
+                      data-testid="input-iframe-height"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Código HTML</Label>
+                    <div className="relative">
+                      <Textarea
+                        value={`<iframe src="${window.location.origin}/public/${formId}" width="100%" height="${iframeHeight}" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></iframe>`}
+                        readOnly
+                        className="font-mono text-xs resize-none h-24"
+                        data-testid="textarea-embed-code"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          const embedCode = `<iframe src="${window.location.origin}/public/${formId}" width="100%" height="${iframeHeight}" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></iframe>`;
+                          navigator.clipboard.writeText(embedCode);
+                          toast({
+                            title: "Copiado",
+                            description: "Código de inserción copiado al portapapeles",
+                          });
+                        }}
+                        data-testid="button-copy-embed-code"
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copiar
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Instrucciones:</strong> Copia el código HTML y pégalo en cualquier página de tu sitio web donde quieras que aparezca el formulario. El iframe se ajustará automáticamente al ancho disponible.
+                    </p>
+                  </div>
                 </div>
               </div>
             </TabsContent>
