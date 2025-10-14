@@ -513,11 +513,16 @@ export default function FormBuilderPage() {
       return;
     }
 
-    // Preparar fechas de publicación
-    const startDate = publishStartDate ? fromLocalDateTimeString(publishStartDate) : null;
-    const endDate = publishEndDate ? fromLocalDateTimeString(publishEndDate) : null;
+    // Preparar fechas de publicación como ISO strings
+    const startDate = publishStartDate ? fromLocalDateTimeString(publishStartDate).toISOString() : null;
+    const endDate = publishEndDate ? fromLocalDateTimeString(publishEndDate).toISOString() : null;
 
-    console.log('Saving with dates:', { publishStartDate, startDate, publishEndDate, endDate });
+    console.log('Saving with dates:', { 
+      publishStartDate, 
+      startDate, 
+      publishEndDate, 
+      endDate 
+    });
 
     if (builderMode === 'code') {
       // Guardar código personalizado
