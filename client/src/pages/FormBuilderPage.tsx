@@ -179,11 +179,26 @@ export default function FormBuilderPage() {
     enabled: !!formId,
   });
 
-  // Helper to convert UTC date to local datetime-local format
+  // Helper to format Date to datetime-local string using local calendar components
   const toLocalDateTimeString = (date: Date): string => {
-    const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - offset * 60 * 1000);
-    return localDate.toISOString().slice(0, 16);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Helper to convert datetime-local string to UTC Date
+  const fromLocalDateTimeString = (dateTimeString: string): Date => {
+    // datetime-local string is in format "YYYY-MM-DDTHH:mm"
+    // We need to create a Date in the user's local timezone
+    const [datePart, timePart] = dateTimeString.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    
+    // Create date in local timezone
+    return new Date(year, month - 1, day, hours, minutes);
   };
 
   useEffect(() => {
@@ -468,7 +483,7 @@ export default function FormBuilderPage() {
     setPublishStartDate(dateString);
     
     if (formId) {
-      const date = dateString ? new Date(dateString) : null;
+      const date = dateString ? fromLocalDateTimeString(dateString) : null;
       updateFormMutation.mutate({ publishStartDate: date });
     }
   };
@@ -477,7 +492,7 @@ export default function FormBuilderPage() {
     setPublishEndDate(dateString);
     
     if (formId) {
-      const date = dateString ? new Date(dateString) : null;
+      const date = dateString ? fromLocalDateTimeString(dateString) : null;
       updateFormMutation.mutate({ publishEndDate: date });
     }
   };
