@@ -536,6 +536,17 @@ export default function FormBuilderPage() {
       updateFormMutation.mutate({ builderMode: 'visual' });
       updateFieldsMutation.mutate(fieldsData);
     }
+
+    // Guardar fechas de publicación si están configuradas
+    const startDate = publishStartDate ? fromLocalDateTimeString(publishStartDate) : null;
+    const endDate = publishEndDate ? fromLocalDateTimeString(publishEndDate) : null;
+    
+    if (startDate || endDate) {
+      updateFormMutation.mutate({ 
+        publishStartDate: startDate, 
+        publishEndDate: endDate 
+      });
+    }
   };
 
   const handlePreview = () => {
