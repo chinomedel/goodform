@@ -828,6 +828,12 @@ export class DatabaseStorage implements IStorage {
     return messages;
   }
 
+  async deleteChatHistory(formId: string): Promise<void> {
+    await db
+      .delete(chatMessages)
+      .where(eq(chatMessages.formId, formId));
+  }
+
   // Password Reset Token operations
   async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
     const [token] = await db
