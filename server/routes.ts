@@ -507,7 +507,16 @@ export function registerRoutes(app: Express): Server {
       // Debug log - always log what we receive
       console.log('PATCH /api/forms/:id - Full request body:', JSON.stringify(req.body, null, 2));
 
-      const updatedForm = await storage.updateForm(id, req.body);
+      // Convert ISO string dates to Date objects for Drizzle
+      const updateData = { ...req.body };
+      if (updateData.publishStartDate && typeof updateData.publishStartDate === 'string') {
+        updateData.publishStartDate = new Date(updateData.publishStartDate);
+      }
+      if (updateData.publishEndDate && typeof updateData.publishEndDate === 'string') {
+        updateData.publishEndDate = new Date(updateData.publishEndDate);
+      }
+
+      const updatedForm = await storage.updateForm(id, updateData);
       
       console.log('PATCH /api/forms/:id - Updated form result:', JSON.stringify({
         id: updatedForm.id,
