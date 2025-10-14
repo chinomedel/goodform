@@ -951,7 +951,7 @@ export default function FormBuilderPage() {
                     <Input
                       id="publish-start-date"
                       type="datetime-local"
-                      value={publishStartDate}
+                      value={publishStartDate || ""}
                       onChange={(e) => {
                         console.log('START DATE CHANGED:', e.target.value);
                         handleStartDateChange(e.target.value);
@@ -966,8 +966,11 @@ export default function FormBuilderPage() {
                     <Input
                       id="publish-end-date"
                       type="datetime-local"
-                      value={publishEndDate}
-                      onChange={(e) => handleEndDateChange(e.target.value)}
+                      value={publishEndDate || ""}
+                      onChange={(e) => {
+                        console.log('END DATE CHANGED:', e.target.value);
+                        handleEndDateChange(e.target.value);
+                      }}
                       data-testid="input-publish-end-date"
                     />
                   </div>
