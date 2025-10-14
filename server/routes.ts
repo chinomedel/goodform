@@ -693,7 +693,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const history = await storage.getChatHistory(formId);
+      const history = await storage.getChatHistory(formId, 'form_builder');
       res.json(history);
     } catch (error) {
       console.error("Error fetching chat history:", error);
@@ -725,13 +725,14 @@ export function registerRoutes(app: Express): Server {
       await storage.createChatMessage({
         formId,
         userId,
+        agentType: 'form_builder',
         role: 'user',
         content: message,
         imageUrl: imageUrl || null,
       });
 
       // Get chat history for context
-      const history = await storage.getChatHistory(formId);
+      const history = await storage.getChatHistory(formId, 'form_builder');
 
       // Prepare system prompt with form mapping instructions
       const systemPrompt = `Eres un asistente experto en HTML, CSS y JavaScript que ayuda a crear formularios personalizados para GoodForm.
@@ -849,6 +850,7 @@ Responde en español de forma clara y profesional. Si generas código, hazlo en 
       const assistantMessage = await storage.createChatMessage({
         formId,
         userId,
+        agentType: 'form_builder',
         role: 'assistant',
         content: aiResponse,
       });
@@ -886,8 +888,7 @@ Responde en español de forma clara y profesional. Si generas código, hazlo en 
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      // Note: We don't have a deleteChatHistory method in storage yet
-      // For now, just return success
+      await storage.deleteChatHistory(formId, 'form_builder');
       res.json({ message: "Chat history cleared" });
     } catch (error) {
       console.error("Error clearing chat history:", error);

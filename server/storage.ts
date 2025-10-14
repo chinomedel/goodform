@@ -819,19 +819,25 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
-  async getChatHistory(formId: string): Promise<ChatMessage[]> {
+  async getChatHistory(formId: string, agentType: 'form_builder' | 'analyst' = 'analyst'): Promise<ChatMessage[]> {
     const messages = await db
       .select()
       .from(chatMessages)
-      .where(eq(chatMessages.formId, formId))
+      .where(and(
+        eq(chatMessages.formId, formId),
+        eq(chatMessages.agentType, agentType)
+      ))
       .orderBy(chatMessages.createdAt);
     return messages;
   }
 
-  async deleteChatHistory(formId: string): Promise<void> {
+  async deleteChatHistory(formId: string, agentType: 'form_builder' | 'analyst' = 'analyst'): Promise<void> {
     await db
       .delete(chatMessages)
-      .where(eq(chatMessages.formId, formId));
+      .where(and(
+        eq(chatMessages.formId, formId),
+        eq(chatMessages.agentType, agentType)
+      ));
   }
 
   // Password Reset Token operations

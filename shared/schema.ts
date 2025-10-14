@@ -26,6 +26,7 @@ export const chartTypeEnum = pgEnum('chart_type', ['bar', 'line', 'pie', 'area',
 export const aggregationTypeEnum = pgEnum('aggregation_type', ['count', 'sum', 'avg', 'min', 'max']);
 export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'deepseek']);
 export const chatRoleEnum = pgEnum('chat_role', ['user', 'assistant', 'system']);
+export const agentTypeEnum = pgEnum('agent_type', ['form_builder', 'analyst']);
 export const blockReasonEnum = pgEnum('block_reason', ['non_payment', 'login_attempts', 'general']);
 
 // Session storage table - used by passport-local for session management
@@ -227,6 +228,7 @@ export const chatMessages = pgTable("chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  agentType: agentTypeEnum("agent_type").notNull().default('analyst'),
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
   imageUrl: text("image_url"),
