@@ -79,6 +79,8 @@ export const forms = pgTable("forms", {
   submitButtonColor: varchar("submit_button_color").notNull().default('#f97316'),
   urlParams: jsonb("url_params"),
   publishedAt: timestamp("published_at"),
+  publishStartDate: timestamp("publish_start_date"),
+  publishEndDate: timestamp("publish_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
