@@ -944,6 +944,21 @@ export default function FormBuilderPage() {
                   Define el rango de fechas durante el cual el formulario estará disponible públicamente
                 </p>
                 <div className="space-y-3">
+                  <Button 
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      console.log('TEST BUTTON CLICKED - Current dates:', {
+                        publishStartDate,
+                        publishEndDate
+                      });
+                      alert(`Fechas actuales:\nInicio: ${publishStartDate}\nFin: ${publishEndDate}`);
+                    }}
+                    className="mb-2"
+                  >
+                    TEST - Ver fechas actuales
+                  </Button>
                   <div className="space-y-2">
                     <Label htmlFor="publish-start-date" className="text-xs">
                       Fecha de inicio (opcional)
