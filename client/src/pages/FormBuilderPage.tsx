@@ -948,7 +948,7 @@ export default function FormBuilderPage() {
                     <Label htmlFor="publish-start-date" className="text-xs">
                       Fecha de inicio (opcional)
                     </Label>
-                    <Input
+                    <input
                       id="publish-start-date"
                       type="datetime-local"
                       value={publishStartDate || ""}
@@ -956,6 +956,7 @@ export default function FormBuilderPage() {
                         console.log('START DATE CHANGED:', e.target.value);
                         handleStartDateChange(e.target.value);
                       }}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       data-testid="input-publish-start-date"
                     />
                   </div>
@@ -963,7 +964,7 @@ export default function FormBuilderPage() {
                     <Label htmlFor="publish-end-date" className="text-xs">
                       Fecha de fin (opcional)
                     </Label>
-                    <Input
+                    <input
                       id="publish-end-date"
                       type="datetime-local"
                       value={publishEndDate || ""}
@@ -971,6 +972,7 @@ export default function FormBuilderPage() {
                         console.log('END DATE CHANGED:', e.target.value);
                         handleEndDateChange(e.target.value);
                       }}
+                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       data-testid="input-publish-end-date"
                     />
                   </div>
