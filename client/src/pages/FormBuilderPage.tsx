@@ -258,8 +258,8 @@ export default function FormBuilderPage() {
       submitButtonText?: string;
       submitButtonColor?: string;
       urlParams?: string[];
-      publishStartDate?: Date | null;
-      publishEndDate?: Date | null;
+      publishStartDate?: string | null;
+      publishEndDate?: string | null;
     }) =>
       updateForm(formId!, data),
     onSuccess: () => {
