@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Image as ImageIcon, Sparkles, Code2, CheckCircle2 } from "lucide-react";
+import { Loader2, Send, Image as ImageIcon, Code2, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { ChatMessage } from "@shared/schema";
 
@@ -134,19 +134,6 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
     }
   };
 
-  const quickActions = [
-    {
-      icon: Sparkles,
-      label: "Generar formulario",
-      prompt: "Crea un formulario de contacto moderno con campos para nombre, email, teléfono y mensaje. Usa estilos CSS modernos y asegúrate de agregar data-field-name a cada campo.",
-    },
-    {
-      icon: CheckCircle2,
-      label: "Revisar código",
-      prompt: "Por favor revisa mi código HTML actual y verifica que todos los campos tengan el atributo data-field-name correctamente configurado. Dame sugerencias de mejora.",
-    },
-  ];
-
   const extractCodeBlocks = (content: string) => {
     const htmlMatch = content.match(/```html\n([\s\S]*?)```/);
     const cssMatch = content.match(/```css\n([\s\S]*?)```/);
@@ -182,25 +169,6 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
         </p>
       </div>
 
-      {/* Quick Actions */}
-      <div className="p-4 border-b space-y-2">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Acciones rápidas:</p>
-        {quickActions.map((action, index) => (
-          <Button
-            key={index}
-            variant="outline"
-            size="sm"
-            className="w-full justify-start text-xs"
-            onClick={() => sendMessage(action.prompt)}
-            disabled={isLoading}
-            data-testid={`button-quick-action-${index}`}
-          >
-            <action.icon className="h-3 w-3 mr-2" />
-            {action.label}
-          </Button>
-        ))}
-      </div>
-
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         {isLoadingHistory ? (
@@ -211,7 +179,7 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
           <div className="text-center py-8 text-muted-foreground text-sm">
             <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No hay mensajes aún</p>
-            <p className="text-xs mt-1">Usa las acciones rápidas o escribe tu consulta</p>
+            <p className="text-xs mt-1">Escribe tu consulta o sube una imagen de diseño</p>
           </div>
         ) : (
           <div className="space-y-4">
