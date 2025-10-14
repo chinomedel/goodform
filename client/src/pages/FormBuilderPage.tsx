@@ -166,6 +166,8 @@ export default function FormBuilderPage() {
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const endDateInputRef = useRef<HTMLInputElement>(null);
   const buttonTextDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const buttonColorDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   
@@ -216,15 +218,29 @@ export default function FormBuilderPage() {
       // Format dates for datetime-local input (preserving local timezone)
       if (formData.publishStartDate) {
         const startDate = new Date(formData.publishStartDate);
-        setPublishStartDate(toLocalDateTimeString(startDate));
+        const startDateString = toLocalDateTimeString(startDate);
+        setPublishStartDate(startDateString);
+        if (startDateInputRef.current) {
+          startDateInputRef.current.value = startDateString;
+        }
       } else {
         setPublishStartDate("");
+        if (startDateInputRef.current) {
+          startDateInputRef.current.value = "";
+        }
       }
       if (formData.publishEndDate) {
         const endDate = new Date(formData.publishEndDate);
-        setPublishEndDate(toLocalDateTimeString(endDate));
+        const endDateString = toLocalDateTimeString(endDate);
+        setPublishEndDate(endDateString);
+        if (endDateInputRef.current) {
+          endDateInputRef.current.value = endDateString;
+        }
       } else {
         setPublishEndDate("");
+        if (endDateInputRef.current) {
+          endDateInputRef.current.value = "";
+        }
       }
       
       setFields(
@@ -513,14 +529,18 @@ export default function FormBuilderPage() {
       return;
     }
 
+    // Leer fechas directamente de los inputs
+    const startDateValue = startDateInputRef.current?.value || "";
+    const endDateValue = endDateInputRef.current?.value || "";
+
     // Preparar fechas de publicación como ISO strings
-    const startDate = publishStartDate ? fromLocalDateTimeString(publishStartDate).toISOString() : null;
-    const endDate = publishEndDate ? fromLocalDateTimeString(publishEndDate).toISOString() : null;
+    const startDate = startDateValue ? fromLocalDateTimeString(startDateValue).toISOString() : null;
+    const endDate = endDateValue ? fromLocalDateTimeString(endDateValue).toISOString() : null;
 
     console.log('Saving with dates:', { 
-      publishStartDate, 
+      startDateValue, 
       startDate, 
-      publishEndDate, 
+      endDateValue, 
       endDate 
     });
 
@@ -944,33 +964,15 @@ export default function FormBuilderPage() {
                   Define el rango de fechas durante el cual el formulario estará disponible públicamente
                 </p>
                 <div className="space-y-3">
-                  <Button 
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      console.log('TEST BUTTON CLICKED - Current dates:', {
-                        publishStartDate,
-                        publishEndDate
-                      });
-                      alert(`Fechas actuales:\nInicio: ${publishStartDate}\nFin: ${publishEndDate}`);
-                    }}
-                    className="mb-2"
-                  >
-                    TEST - Ver fechas actuales
-                  </Button>
                   <div className="space-y-2">
                     <Label htmlFor="publish-start-date" className="text-xs">
                       Fecha de inicio (opcional)
                     </Label>
                     <input
+                      ref={startDateInputRef}
                       id="publish-start-date"
                       type="datetime-local"
-                      value={publishStartDate || ""}
-                      onChange={(e) => {
-                        console.log('START DATE CHANGED:', e.target.value);
-                        handleStartDateChange(e.target.value);
-                      }}
+                      defaultValue={publishStartDate || ""}
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       data-testid="input-publish-start-date"
                     />
@@ -980,13 +982,10 @@ export default function FormBuilderPage() {
                       Fecha de fin (opcional)
                     </Label>
                     <input
+                      ref={endDateInputRef}
                       id="publish-end-date"
                       type="datetime-local"
-                      value={publishEndDate || ""}
-                      onChange={(e) => {
-                        console.log('END DATE CHANGED:', e.target.value);
-                        handleEndDateChange(e.target.value);
-                      }}
+                      defaultValue={publishEndDate || ""}
                       className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                       data-testid="input-publish-end-date"
                     />
