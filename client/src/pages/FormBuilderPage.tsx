@@ -484,6 +484,7 @@ export default function FormBuilderPage() {
     
     if (formId) {
       const date = dateString ? fromLocalDateTimeString(dateString) : null;
+      console.log('Publishing start date:', { dateString, date });
       updateFormMutation.mutate({ publishStartDate: date });
     }
   };
@@ -493,6 +494,7 @@ export default function FormBuilderPage() {
     
     if (formId) {
       const date = dateString ? fromLocalDateTimeString(dateString) : null;
+      console.log('Publishing end date:', { dateString, date });
       updateFormMutation.mutate({ publishEndDate: date });
     }
   };
