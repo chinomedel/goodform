@@ -107,6 +107,7 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
         id: Date.now().toString(),
         formId,
         userId: null,
+        agentType: 'form_builder',
         role: "user",
         content: textToSend,
         imageUrl: imagePreview,
@@ -118,10 +119,20 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
       setInput("");
       removeImage();
 
-      toast({
-        title: "Mensaje enviado",
-        description: "El asistente ha respondido",
-      });
+      // Auto-insert code if detected
+      const { html, css, js } = extractCodeBlocks(assistantMessage.content);
+      if (onInsertCode && (html || css || js)) {
+        onInsertCode(html, css, js);
+        toast({
+          title: "✨ Código insertado automáticamente",
+          description: "El código del asistente se ha insertado en las pestañas",
+        });
+      } else {
+        toast({
+          title: "Mensaje enviado",
+          description: "El asistente ha respondido",
+        });
+      }
     } catch (error: any) {
       console.error("Error sending message:", error);
       toast({
@@ -144,17 +155,6 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
       css: cssMatch ? cssMatch[1].trim() : "",
       js: jsMatch ? jsMatch[1].trim() : "",
     };
-  };
-
-  const handleInsertCode = (content: string) => {
-    const { html, css, js } = extractCodeBlocks(content);
-    if (onInsertCode && (html || css || js)) {
-      onInsertCode(html, css, js);
-      toast({
-        title: "Código insertado",
-        description: "El código se ha insertado en los editores",
-      });
-    }
   };
 
   return (
@@ -204,21 +204,25 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
                     />
                   )}
                   <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                  {message.role === "assistant" && onInsertCode && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => handleInsertCode(message.content)}
-                      data-testid="button-insert-code"
-                    >
-                      <Code2 className="h-3 w-3 mr-1" />
-                      Insertar código
-                    </Button>
+                  {message.role === "assistant" && message.content.includes("```") && (
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                      <Code2 className="h-3 w-3" />
+                      Código insertado automáticamente
+                    </div>
                   )}
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start" data-testid="message-loading">
+                <div className="max-w-[85%] rounded-lg p-3 bg-muted">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>El asistente está trabajando...</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>

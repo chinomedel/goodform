@@ -737,6 +737,15 @@ export function registerRoutes(app: Express): Server {
       // Prepare system prompt with form mapping instructions
       const systemPrompt = `Eres un asistente experto en HTML, CSS y JavaScript que ayuda a crear formularios personalizados para GoodForm.
 
+IMPORTANTE: Cuando generes o modifiques código:
+1. Primero explica brevemente qué vas a crear o modificar
+2. Luego genera el código en bloques separados usando la sintaxis de markdown:
+   - \`\`\`html para HTML
+   - \`\`\`css para CSS
+   - \`\`\`javascript para JavaScript
+3. El código se insertará AUTOMÁTICAMENTE en las pestañas correspondientes
+4. Después del código, explica brevemente lo que hiciste
+
 INSTRUCCIONES IMPORTANTES PARA MAPEAR CAMPOS:
 
 1. Para que el sistema capture correctamente las respuestas del formulario, debes agregar el atributo data-field-name a cada campo de entrada:
@@ -768,7 +777,7 @@ INSTRUCCIONES IMPORTANTES PARA MAPEAR CAMPOS:
 
 5. Si el usuario te envía una imagen de un diseño, analízala y genera el código HTML/CSS/JavaScript correspondiente, asegurándote de agregar data-field-name a todos los campos.
 
-Responde en español de forma clara y profesional. Si generas código, hazlo en bloques separados de HTML, CSS y JavaScript.`;
+Responde en español de forma clara y profesional. Siempre muestra tu razonamiento antes de generar código.`;
 
       // Prepare messages for AI
       const messages: any[] = [
