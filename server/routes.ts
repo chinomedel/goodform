@@ -716,6 +716,21 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Form not available" });
       }
 
+      // Check publication date range
+      const now = new Date();
+      if (form.publishStartDate && now < new Date(form.publishStartDate)) {
+        return res.status(404).json({ 
+          message: "Este formulario aún no está disponible",
+          availableFrom: form.publishStartDate 
+        });
+      }
+      if (form.publishEndDate && now > new Date(form.publishEndDate)) {
+        return res.status(404).json({ 
+          message: "Este formulario ya no está disponible",
+          availableUntil: form.publishEndDate 
+        });
+      }
+
       // Only return necessary data for public forms
       res.json({
         id: form.id,
@@ -754,6 +769,21 @@ export function registerRoutes(app: Express): Server {
       // Check if form is public
       if (form.shareType !== 'public') {
         return res.status(404).json({ message: "Form not available" });
+      }
+
+      // Check publication date range
+      const now = new Date();
+      if (form.publishStartDate && now < new Date(form.publishStartDate)) {
+        return res.status(404).json({ 
+          message: "Este formulario aún no está disponible",
+          availableFrom: form.publishStartDate 
+        });
+      }
+      if (form.publishEndDate && now > new Date(form.publishEndDate)) {
+        return res.status(404).json({ 
+          message: "Este formulario ya no está disponible",
+          availableUntil: form.publishEndDate 
+        });
       }
 
       const responseData = insertFormResponseSchema.parse({
