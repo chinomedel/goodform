@@ -37,7 +37,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
-type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
+type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "radio" | "date" | "textarea";
 
 interface LocalField {
   id: string;
@@ -649,6 +649,7 @@ export default function FormBuilderPage() {
     { type: "number", label: "Número", icon: "#" },
     { type: "select", label: "Selección", icon: "▼" },
     { type: "checkbox", label: "Checkbox", icon: "☐" },
+    { type: "radio", label: "Radio", icon: "◉" },
     { type: "date", label: "Fecha", icon: "📅" },
     { type: "textarea", label: "Área de texto", icon: "≡" },
   ];
