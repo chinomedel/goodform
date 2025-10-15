@@ -24,7 +24,7 @@ export const deploymentModeEnum = pgEnum('deployment_mode', ['saas', 'self-hoste
 export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 'expired']);
 export const chartTypeEnum = pgEnum('chart_type', ['bar', 'line', 'pie', 'area', 'scatter']);
 export const aggregationTypeEnum = pgEnum('aggregation_type', ['count', 'sum', 'avg', 'min', 'max']);
-export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'deepseek']);
+export const aiProviderEnum = pgEnum('ai_provider', ['openai', 'deepseek', 'claude']);
 export const chatRoleEnum = pgEnum('chat_role', ['user', 'assistant', 'system']);
 export const agentTypeEnum = pgEnum('agent_type', ['form_builder', 'analyst']);
 export const blockReasonEnum = pgEnum('block_reason', ['non_payment', 'login_attempts', 'general']);
@@ -170,6 +170,7 @@ export const aiConfig = pgTable("ai_config", {
   activeProvider: aiProviderEnum("active_provider").notNull().default('openai'),
   openaiApiKey: text("openai_api_key"),
   deepseekApiKey: text("deepseek_api_key"),
+  claudeApiKey: text("claude_api_key"),
   // OpenAI pricing (in cents per million tokens)
   openaiInputPrice: integer("openai_input_price").notNull().default(15), // $0.15 per million
   openaiOutputPrice: integer("openai_output_price").notNull().default(60), // $0.60 per million
@@ -178,6 +179,10 @@ export const aiConfig = pgTable("ai_config", {
   deepseekInputPrice: integer("deepseek_input_price").notNull().default(14), // $0.14 per million
   deepseekOutputPrice: integer("deepseek_output_price").notNull().default(28), // $0.28 per million
   deepseekCachePrice: integer("deepseek_cache_price").notNull().default(1), // $0.014 per million (rounded to 1 cent)
+  // Claude pricing (in cents per million tokens)
+  claudeInputPrice: integer("claude_input_price").notNull().default(300), // $3.00 per million
+  claudeOutputPrice: integer("claude_output_price").notNull().default(1500), // $15.00 per million
+  claudeCachePrice: integer("claude_cache_price").notNull().default(0), // Cache pricing if applicable
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
