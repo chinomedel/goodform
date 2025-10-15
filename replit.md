@@ -32,8 +32,8 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
     - User table columns: is_deleted (boolean NOT NULL DEFAULT false), block_reason (nullable), blocked_at (nullable timestamp)
 - **Data Export**: Exports form responses to Excel using ExcelJS.
 - **Real-time Analytics**: Customizable charts (bar, line, pie, area, scatter) powered by Recharts, supporting various aggregation types and cross-analysis for both visual and code-based forms. Features an interactive ChartBuilder UI and API for chart management.
-- **AI Integration**: Supports multiple AI providers (OpenAI, Deepseek) configured via an admin page. Features two specialized AI agents with independent chat histories:
-  - **Form Builder Agent** (`agentType: 'form_builder'`): Integrated into code mode form builder via collapsible side panel, helps create HTML/CSS/JavaScript forms with GPT-4 Vision support for image-to-code conversion. Provides guidance on field mapping with `data-field-name` attributes through conversational interface. Features:
+- **AI Integration**: Supports multiple AI providers (OpenAI, Deepseek, Claude) configured via an admin page. Features two specialized AI agents with independent chat histories:
+  - **Form Builder Agent** (`agentType: 'form_builder'`): Integrated into code mode form builder via collapsible side panel, helps create HTML/CSS/JavaScript forms with vision support for image-to-code conversion (GPT-4o for OpenAI, Claude 3.5 Sonnet for Anthropic). Provides guidance on field mapping with `data-field-name` attributes through conversational interface. Features:
     - **Automatic Code Insertion**: Generated code blocks are automatically inserted into HTML/CSS/JS editors
     - **Visible Reasoning**: Agent shows its thought process before generating code and explains after
     - **Loading Indicators**: Visual feedback while agent is working
@@ -42,7 +42,7 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
     - **Image Upload**: Supports image-to-code conversion with GPT-4 Vision
     - **Isolated Preview**: Code preview uses iframe to prevent CSS conflicts
     - Persistent chat history per form with natural conversation flow
-  - **Analyst Agent** (`agentType: 'analyst'`): Integrated into form responses page for natural language data analysis, automatic chart creation/editing/deletion via function calls, and persistent chat history. Supports complex queries and cross-field analysis.
+  - **Analyst Agent** (`agentType: 'analyst'`): Integrated into form responses page for natural language data analysis, automatic chart creation/editing/deletion via function calls (OpenAI and Deepseek only; Claude provides text-only analysis), and persistent chat history. Supports complex queries and cross-field analysis.
   - API keys are securely stored encrypted in PostgreSQL. Granular token pricing system with separate fields for input tokens, output tokens, and cache tokens per provider, with cost calculation: (prompt_tokens × inputPrice + completion_tokens × outputPrice) / 1,000,000. Prices stored in cents for precision.
   - Both agents maintain separate conversation histories through `agent_type` enum field in `chatMessages` table.
 - **SMTP Email Configuration**: Secure SMTP server configuration for email notifications, accessible to Super Admin and Admin Auto-host roles. Credentials are encrypted and stored in PostgreSQL.
@@ -78,5 +78,5 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
 - **Data Export**: ExcelJS
 - **Charting Library**: Recharts
 - **Form Validation (Frontend)**: React Hook Form, Zod
-- **AI Integration**: OpenAI, Deepseek
+- **AI Integration**: OpenAI, Deepseek, Anthropic Claude (@anthropic-ai/sdk)
 - **Email**: Nodemailer
