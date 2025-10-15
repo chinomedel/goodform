@@ -1,10 +1,20 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GripVertical, Trash2, Settings } from "lucide-react";
+import { GripVertical, Trash2, Settings, GitBranch } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "radio" | "date" | "textarea";
+
+interface ConditionalLogic {
+  enabled: boolean;
+  logicType: "and" | "or";
+  conditions: Array<{
+    fieldId: string;
+    operator: "equals" | "not_equals" | "contains";
+    value: string;
+  }>;
+}
 
 interface FormBuilderFieldProps {
   id: string;
@@ -13,9 +23,11 @@ interface FormBuilderFieldProps {
   required?: boolean;
   placeholder?: string;
   options?: string[];
+  conditionalLogic?: ConditionalLogic | null;
   onDelete?: () => void;
   onSettings?: () => void;
   onLabelChange?: (newLabel: string) => void;
+  onConditionalLogic?: () => void;
   onDragStart?: (id: string) => void;
   onDragOver?: (id: string) => void;
   onDragEnd?: () => void;
@@ -39,14 +51,17 @@ export function FormBuilderField({
   required,
   placeholder,
   options,
+  conditionalLogic,
   onDelete,
   onSettings,
   onLabelChange,
+  onConditionalLogic,
   onDragStart,
   onDragOver,
   onDragEnd,
 }: FormBuilderFieldProps) {
   const needsOptions = type === 'select' || type === 'checkbox' || type === 'radio';
+  const hasConditionalLogic = conditionalLogic?.enabled && conditionalLogic.conditions.length > 0;
   
   return (
     <Card 
@@ -79,6 +94,12 @@ export function FormBuilderField({
                 data-testid={`input-label-${id}`}
               />
               {required && <span className="text-destructive">*</span>}
+              {hasConditionalLogic && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <GitBranch className="h-3 w-3" />
+                  Condicional
+                </Badge>
+              )}
             </div>
           </div>
           {placeholder && (
@@ -101,6 +122,16 @@ export function FormBuilderField({
         </div>
 
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 ${hasConditionalLogic ? 'text-primary' : ''}`}
+            onClick={onConditionalLogic}
+            data-testid={`button-conditional-${id}`}
+            title="Lógica condicional"
+          >
+            <GitBranch className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

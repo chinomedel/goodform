@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
+import { ConditionalLogicDialog } from "@/components/ConditionalLogicDialog";
 import { Card } from "@/components/ui/card";
 import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X, Copy, Bot, Share2 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -39,6 +40,16 @@ import {
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "radio" | "date" | "textarea";
 
+interface ConditionalLogic {
+  enabled: boolean;
+  logicType: "and" | "or";
+  conditions: Array<{
+    fieldId: string;
+    operator: "equals" | "not_equals" | "contains";
+    value: string;
+  }>;
+}
+
 interface LocalField {
   id: string;
   type: FieldType;
@@ -46,6 +57,7 @@ interface LocalField {
   required: boolean;
   placeholder?: string;
   options?: string[];
+  conditionalLogic?: ConditionalLogic | null;
   order: number;
 }
 
@@ -187,6 +199,8 @@ export default function FormBuilderPage() {
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<LocalField | null>(null);
   const [optionsDialogOpen, setOptionsDialogOpen] = useState(false);
+  const [conditionalLogicField, setConditionalLogicField] = useState<LocalField | null>(null);
+  const [conditionalLogicDialogOpen, setConditionalLogicDialogOpen] = useState(false);
 
   const { data: formData, isLoading } = useQuery({
     queryKey: ["/api/forms", formId],
@@ -489,7 +503,7 @@ export default function FormBuilderPage() {
 
   const openFieldSettings = (fieldId: string) => {
     const field = fields.find(f => f.id === fieldId);
-    if (field && (field.type === 'select' || field.type === 'checkbox')) {
+    if (field && (field.type === 'select' || field.type === 'checkbox' || field.type === 'radio')) {
       setEditingField(field);
       setOptionsDialogOpen(true);
     }
@@ -501,6 +515,24 @@ export default function FormBuilderPage() {
     ));
     setOptionsDialogOpen(false);
     setEditingField(null);
+  };
+
+  const openConditionalLogic = (fieldId: string) => {
+    const field = fields.find(f => f.id === fieldId);
+    if (field) {
+      setConditionalLogicField(field);
+      setConditionalLogicDialogOpen(true);
+    }
+  };
+
+  const saveConditionalLogic = (logic: ConditionalLogic | null) => {
+    if (conditionalLogicField) {
+      setFields(fields.map((f) => 
+        f.id === conditionalLogicField.id ? { ...f, conditionalLogic: logic } : f
+      ));
+    }
+    setConditionalLogicDialogOpen(false);
+    setConditionalLogicField(null);
   };
 
   const addUrlParam = () => {
@@ -802,8 +834,10 @@ export default function FormBuilderPage() {
                   required={field.required}
                   placeholder={field.placeholder}
                   options={field.options}
+                  conditionalLogic={field.conditionalLogic}
                   onDelete={() => deleteField(field.id)}
                   onSettings={() => openFieldSettings(field.id)}
+                  onConditionalLogic={() => openConditionalLogic(field.id)}
                   onLabelChange={(newLabel) => updateFieldLabel(field.id, newLabel)}
                   onDragStart={handleDragStart}
                   onDragOver={handleDragOver}
@@ -1508,6 +1542,20 @@ document.getElementById('customForm')?.addEventListener('submit', async function
           </div>
         </SheetContent>
       </Sheet>
+
+      <ConditionalLogicDialog
+        open={conditionalLogicDialogOpen}
+        onOpenChange={setConditionalLogicDialogOpen}
+        currentFieldId={conditionalLogicField?.id || ""}
+        allFields={fields.map(f => ({
+          id: f.id,
+          type: f.type,
+          label: f.label,
+          options: f.options
+        }))}
+        initialLogic={conditionalLogicField?.conditionalLogic}
+        onSave={saveConditionalLogic}
+      />
     </div>
   );
 }
