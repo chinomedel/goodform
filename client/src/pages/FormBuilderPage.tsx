@@ -834,104 +834,104 @@ export default function FormBuilderPage() {
         <aside className="w-80 border-l border-border bg-muted/30 p-4 overflow-y-auto">
           <h3 className="font-semibold mb-4">Configuración</h3>
           <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-semibold">Estado</Label>
-                <p className="text-sm text-muted-foreground mt-1" data-testid="text-form-status">
-                  {formData?.status === "published"
-                    ? "Este formulario está publicado"
-                    : "Este formulario está en borrador"}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-semibold">Respuestas</Label>
-                <p className="text-sm text-muted-foreground mt-1" data-testid="text-response-count">
-                  {formData ? `${formData.fields.length} campos` : "0 campos"}
-                </p>
-              </div>
-              <div className="pt-2 border-t">
-                <Label className="text-sm font-semibold">Botón de envío</Label>
-                <div className="space-y-3 mt-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Texto del botón</Label>
-                    <Input
-                      value={submitButtonText}
-                      onChange={(e) => handleButtonTextChange(e.target.value)}
-                      placeholder="Enviar respuesta"
-                      className="mt-1"
-                      data-testid="input-button-text"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Color del botón</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        type="color"
-                        value={submitButtonColor}
-                        onChange={(e) => handleButtonColorChange(e.target.value)}
-                        className="w-14 h-9 p-1 cursor-pointer"
-                        data-testid="input-button-color-picker"
-                      />
-                      <Input
-                        type="text"
-                        value={submitButtonColor}
-                        onChange={(e) => handleButtonColorChange(e.target.value)}
-                        placeholder="#6366f1"
-                        className="flex-1"
-                        data-testid="input-button-color-text"
-                      />
-                    </div>
-                  </div>
+            <div>
+              <Label className="text-sm font-semibold">Estado</Label>
+              <p className="text-sm text-muted-foreground mt-1" data-testid="text-form-status">
+                {formData?.status === "published"
+                  ? "Este formulario está publicado"
+                  : "Este formulario está en borrador"}
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm font-semibold">Respuestas</Label>
+              <p className="text-sm text-muted-foreground mt-1" data-testid="text-response-count">
+                {formData ? `${formData.fields.length} campos` : "0 campos"}
+              </p>
+            </div>
+            <div className="pt-2 border-t">
+              <Label className="text-sm font-semibold">Botón de envío</Label>
+              <div className="space-y-3 mt-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Texto del botón</Label>
+                  <Input
+                    value={submitButtonText}
+                    onChange={(e) => handleButtonTextChange(e.target.value)}
+                    placeholder="Enviar respuesta"
+                    className="mt-1"
+                    data-testid="input-button-text"
+                  />
                 </div>
-              </div>
-              <div className="pt-2 border-t">
-                <Label className="text-sm font-semibold">Parámetros de URL</Label>
-                <p className="text-xs text-muted-foreground mt-1 mb-3">
-                  Define qué parámetros de la URL deseas capturar automáticamente con las respuestas
-                </p>
-                <div className="space-y-2">
-                  {urlParams.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No hay parámetros configurados</p>
-                  ) : (
-                    <div className="space-y-1">
-                      {urlParams.map((param, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-background rounded border">
-                          <code className="text-xs flex-1">{param}</code>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => removeUrlParam(param)}
-                            data-testid={`button-remove-param-${index}`}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex gap-2 mt-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Color del botón</Label>
+                  <div className="flex gap-2 mt-1">
                     <Input
-                      value={newUrlParam}
-                      onChange={(e) => setNewUrlParam(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addUrlParam();
-                        }
-                      }}
-                      placeholder="ej: source, email, user_id"
+                      type="color"
+                      value={submitButtonColor}
+                      onChange={(e) => handleButtonColorChange(e.target.value)}
+                      className="w-14 h-9 p-1 cursor-pointer"
+                      data-testid="input-button-color-picker"
+                    />
+                    <Input
+                      type="text"
+                      value={submitButtonColor}
+                      onChange={(e) => handleButtonColorChange(e.target.value)}
+                      placeholder="#6366f1"
                       className="flex-1"
-                      data-testid="input-new-url-param"
+                      data-testid="input-button-color-text"
                     />
-                    <Button onClick={addUrlParam} size="icon" data-testid="button-add-url-param">
-                      <Plus className="h-4 w-4" />
-                    </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Ejemplo de URL: /public/form-id?source=email&user_id=123
-                  </p>
                 </div>
               </div>
+            </div>
+            <div className="pt-2 border-t">
+              <Label className="text-sm font-semibold">Parámetros de URL</Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                Define qué parámetros de la URL deseas capturar automáticamente con las respuestas
+              </p>
+              <div className="space-y-2">
+                {urlParams.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No hay parámetros configurados</p>
+                ) : (
+                  <div className="space-y-1">
+                    {urlParams.map((param, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-background rounded border">
+                        <code className="text-xs flex-1">{param}</code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => removeUrlParam(param)}
+                          data-testid={`button-remove-param-${index}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={newUrlParam}
+                    onChange={(e) => setNewUrlParam(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addUrlParam();
+                      }
+                    }}
+                    placeholder="ej: source, email, user_id"
+                    className="flex-1"
+                    data-testid="input-new-url-param"
+                  />
+                  <Button onClick={addUrlParam} size="icon" data-testid="button-add-url-param">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ejemplo de URL: /public/form-id?source=email&user_id=123
+                </p>
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -1285,6 +1285,198 @@ document.getElementById('customForm')?.addEventListener('submit', async function
           </>
         )}
       </div>
+
+      {/* Panel deslizante para Compartir */}
+      <Sheet open={shareSheetOpen} onOpenChange={setShareSheetOpen}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Compartir Formulario</SheetTitle>
+            <SheetDescription>
+              Comparte tu formulario con otros usuarios o insértalo en tu sitio web
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="space-y-6 mt-6">
+            <div>
+              <Label className="text-sm font-semibold">Visibilidad</Label>
+              <p className="text-sm text-muted-foreground mt-1" data-testid="text-share-type-sheet">
+                {formData?.shareType === "public"
+                  ? "Este formulario es público"
+                  : "Solo usuarios con permisos pueden ver este formulario"}
+              </p>
+            </div>
+
+            <div className="pt-4 border-t space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">URL Pública</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Cualquier persona con este enlace puede completar el formulario
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={`${window.location.origin}/public/${formId}`}
+                    readOnly
+                    className="font-mono text-xs"
+                    data-testid="input-public-url-sheet"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/public/${formId}`);
+                      toast({
+                        title: "Copiado",
+                        description: "URL pública copiada al portapapeles",
+                      });
+                    }}
+                    data-testid="button-copy-public-url-sheet"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">URL para Usuarios Registrados</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Solo usuarios que hayan iniciado sesión pueden acceder
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={`${window.location.origin}/preview/${formId}`}
+                    readOnly
+                    className="font-mono text-xs"
+                    data-testid="input-auth-url-sheet"
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/preview/${formId}`);
+                      toast({
+                        title: "Copiado",
+                        description: "URL para usuarios registrados copiada al portapapeles",
+                      });
+                    }}
+                    data-testid="button-copy-auth-url-sheet"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Label className="text-sm font-semibold">Período de Publicación</Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                Define el rango de fechas durante el cual el formulario estará disponible públicamente
+              </p>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="publish-start-date-sheet" className="text-xs">
+                    Fecha de inicio (opcional)
+                  </Label>
+                  <input
+                    ref={startDateInputRef}
+                    id="publish-start-date-sheet"
+                    type="datetime-local"
+                    defaultValue={publishStartDate || ""}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    data-testid="input-publish-start-date-sheet"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="publish-end-date-sheet" className="text-xs">
+                    Fecha de fin (opcional)
+                  </Label>
+                  <input
+                    ref={endDateInputRef}
+                    id="publish-end-date-sheet"
+                    type="datetime-local"
+                    defaultValue={publishEndDate || ""}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    data-testid="input-publish-end-date-sheet"
+                  />
+                </div>
+                {publishStartDate && publishEndDate && (
+                  <p className="text-xs text-muted-foreground">
+                    El formulario estará disponible desde{" "}
+                    <span className="font-medium">
+                      {new Date(publishStartDate).toLocaleDateString("es-ES", {
+                        dateStyle: "short",
+                      })}
+                    </span>{" "}
+                    hasta{" "}
+                    <span className="font-medium">
+                      {new Date(publishEndDate).toLocaleDateString("es-ES", {
+                        dateStyle: "short",
+                      })}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Label className="text-sm font-semibold">Código de Inserción</Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                Copia este código para insertar el formulario en tu sitio web
+              </p>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="iframe-height-sheet" className="text-xs">
+                    Altura del iframe (px)
+                  </Label>
+                  <Input
+                    id="iframe-height-sheet"
+                    type="number"
+                    value={iframeHeight}
+                    onChange={(e) => setIframeHeight(e.target.value)}
+                    min="300"
+                    max="2000"
+                    placeholder="600"
+                    className="w-full"
+                    data-testid="input-iframe-height-sheet"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">Código HTML</Label>
+                  <div className="relative">
+                    <Textarea
+                      value={`<iframe src="${window.location.origin}/public/${formId}" width="100%" height="${iframeHeight}" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></iframe>`}
+                      readOnly
+                      className="font-mono text-xs resize-none h-24"
+                      data-testid="textarea-embed-code-sheet"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => {
+                        const embedCode = `<iframe src="${window.location.origin}/public/${formId}" width="100%" height="${iframeHeight}" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></iframe>`;
+                        navigator.clipboard.writeText(embedCode);
+                        toast({
+                          title: "Copiado",
+                          description: "Código de inserción copiado al portapapeles",
+                        });
+                      }}
+                      data-testid="button-copy-embed-code-sheet"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copiar
+                    </Button>
+                  </div>
+                </div>
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Instrucciones:</strong> Copia el código HTML y pégalo en cualquier página de tu sitio web donde quieras que aparezca el formulario. El iframe se ajustará automáticamente al ancho disponible.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
