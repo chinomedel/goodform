@@ -17,17 +17,18 @@ export default function AiConfigPage() {
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
   const [openaiKey, setOpenaiKey] = useState("");
   const [deepseekKey, setDeepseekKey] = useState("");
+  const [claudeKey, setClaudeKey] = useState("");
 
   const { data: aiConfig, isLoading } = useQuery<AiConfig>({
     queryKey: ['/api/ai-config'],
   });
 
-  const { data: keysStatus } = useQuery<{ openai: boolean; deepseek: boolean }>({
+  const { data: keysStatus } = useQuery<{ openai: boolean; deepseek: boolean; claude: boolean }>({
     queryKey: ['/api/ai-config/keys-status'],
   });
 
   const updateConfigMutation = useMutation({
-    mutationFn: async (provider: 'openai' | 'deepseek') => {
+    mutationFn: async (provider: 'openai' | 'deepseek' | 'claude') => {
       const response = await apiRequest("PATCH", "/api/ai-config", { activeProvider: provider });
       return await response.json();
     },
@@ -72,7 +73,7 @@ export default function AiConfigPage() {
   });
 
   const updateKeysMutation = useMutation({
-    mutationFn: async (data: { openaiApiKey?: string; deepseekApiKey?: string }) => {
+    mutationFn: async (data: { openaiApiKey?: string; deepseekApiKey?: string; claudeApiKey?: string }) => {
       const response = await apiRequest("POST", "/api/ai-config/update-keys", data);
       return await response.json();
     },
@@ -80,6 +81,7 @@ export default function AiConfigPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/ai-config/keys-status'] });
       setOpenaiKey("");
       setDeepseekKey("");
+      setClaudeKey("");
       toast({
         title: "API Keys actualizadas",
         description: "Las API keys han sido guardadas de forma segura",
@@ -103,6 +105,7 @@ export default function AiConfigPage() {
     const data: any = {};
     if (openaiKey.trim()) data.openaiApiKey = openaiKey.trim();
     if (deepseekKey.trim()) data.deepseekApiKey = deepseekKey.trim();
+    if (claudeKey.trim()) data.claudeApiKey = claudeKey.trim();
     
     if (Object.keys(data).length === 0) {
       toast({
@@ -141,7 +144,7 @@ export default function AiConfigPage() {
         <CardContent className="space-y-6">
           <RadioGroup
             value={aiConfig?.activeProvider || 'openai'}
-            onValueChange={(value) => updateConfigMutation.mutate(value as 'openai' | 'deepseek')}
+            onValueChange={(value) => updateConfigMutation.mutate(value as 'openai' | 'deepseek' | 'claude')}
             disabled={updateConfigMutation.isPending}
             data-testid="radio-group-provider"
           >
@@ -212,6 +215,40 @@ export default function AiConfigPage() {
                 </Button>
               </div>
             </div>
+
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center space-x-3">
+                <RadioGroupItem value="claude" id="claude" data-testid="radio-claude" />
+                <Label htmlFor="claude" className="cursor-pointer">
+                  <div className="font-medium">Claude (Anthropic)</div>
+                  <div className="text-sm text-muted-foreground">Claude 3.5 Sonnet</div>
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                {aiConfig?.activeProvider === 'claude' && (
+                  <Badge variant="default" data-testid="badge-active-claude">Activo</Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleTest('claude')}
+                  disabled={testingProvider === 'claude'}
+                  data-testid="button-test-claude"
+                >
+                  {testingProvider === 'claude' ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                      Probando...
+                    </>
+                  ) : (
+                    <>
+                      <FlaskConical className="h-3 w-3 mr-2" />
+                      Probar
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </RadioGroup>
 
           <Alert>
@@ -261,6 +298,23 @@ export default function AiConfigPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               Obtén tu API key en <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="underline">platform.deepseek.com</a>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="claude-key">Claude API Key (Anthropic)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="claude-key"
+                type="password"
+                placeholder="sk-ant-..."
+                value={claudeKey}
+                onChange={(e) => setClaudeKey(e.target.value)}
+                data-testid="input-claude-key"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Obtén tu API key en <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="underline">console.anthropic.com</a>
             </p>
           </div>
 
@@ -318,6 +372,25 @@ export default function AiConfigPage() {
             </div>
             <div className="flex items-center gap-2">
               {keysStatus?.deepseek ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-muted-foreground">Configurada</span>
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-muted-foreground">No configurada</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-medium">Claude API Key</div>
+            </div>
+            <div className="flex items-center gap-2">
+              {keysStatus?.claude ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   <span className="text-sm text-muted-foreground">Configurada</span>
