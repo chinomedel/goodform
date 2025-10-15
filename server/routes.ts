@@ -25,6 +25,7 @@ import {
   executeGetExistingCharts,
   executeGetFormFields,
 } from "./ai-tools";
+import OpenAI from 'openai';
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
@@ -812,7 +813,6 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       let model = '';
 
       if (aiConfig.activeProvider === 'openai') {
-        const OpenAI = require('openai').default;
         const openai = new OpenAI({ apiKey: activeKey });
         
         // Use GPT-4 Vision if there's an image in the current message
@@ -825,7 +825,7 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
           max_tokens: 2000,
         });
 
-        aiResponse = completion.choices[0].message.content;
+        aiResponse = completion.choices[0].message.content || '';
         promptTokens = completion.usage?.prompt_tokens || 0;
         completionTokens = completion.usage?.completion_tokens || 0;
       } else {
