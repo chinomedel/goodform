@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormBuilderField } from "@/components/FormBuilderField";
 import { Card } from "@/components/ui/card";
-import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X, Copy, Bot } from "lucide-react";
+import { Save, Eye, Globe, Loader2, Code2, Palette, HelpCircle, Plus, X, Copy, Bot, Share2 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FormBuilderChat } from "@/components/FormBuilderChat";
 import {
@@ -29,6 +29,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
 
@@ -166,6 +173,7 @@ export default function FormBuilderPage() {
   const [publishEndDate, setPublishEndDate] = useState<string>("");
   const [iframeHeight, setIframeHeight] = useState<string>("600");
   const [showChat, setShowChat] = useState<boolean>(true);
+  const [shareSheetOpen, setShareSheetOpen] = useState<boolean>(false);
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -726,6 +734,15 @@ export default function FormBuilderPage() {
               <Globe className="h-4 w-4 mr-2" />
             )}
             Publicar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShareSheetOpen(true)}
+            disabled={!formId}
+            data-testid="button-share"
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Compartir
           </Button>
         </div>
       </header>
