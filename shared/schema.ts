@@ -18,7 +18,7 @@ export const userRoleEnum = pgEnum('user_role', ['admin_auto_host', 'visualizado
 export const formStatusEnum = pgEnum('form_status', ['draft', 'published']);
 export const formPermissionEnum = pgEnum('form_permission', ['viewer', 'editor']);
 export const shareTypeEnum = pgEnum('share_type', ['users', 'public']);
-export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 'select', 'checkbox', 'date', 'textarea']);
+export const fieldTypeEnum = pgEnum('field_type', ['text', 'email', 'number', 'select', 'checkbox', 'radio', 'date', 'textarea']);
 export const builderModeEnum = pgEnum('builder_mode', ['visual', 'code']);
 export const deploymentModeEnum = pgEnum('deployment_mode', ['saas', 'self-hosted']);
 export const licenseStatusEnum = pgEnum('license_status', ['active', 'revoked', 'expired']);
@@ -96,6 +96,7 @@ export const formFields = pgTable("form_fields", {
   required: boolean("required").notNull().default(false),
   options: text("options").array(),
   order: integer("order").notNull(),
+  conditionalLogic: jsonb("conditional_logic"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
