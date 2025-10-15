@@ -26,6 +26,7 @@ import {
   executeGetFormFields,
 } from "./ai-tools";
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: any, res: any, next: any) {
@@ -807,7 +808,7 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       }
 
       // Call AI provider
-      let aiResponse: string;
+      let aiResponse: string = '';
       let promptTokens = 0;
       let completionTokens = 0;
       let model = '';
@@ -828,10 +829,10 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
         aiResponse = completion.choices[0].message.content || '';
         promptTokens = completion.usage?.prompt_tokens || 0;
         completionTokens = completion.usage?.completion_tokens || 0;
-      } else {
+      } else if (aiConfig.activeProvider === 'deepseek') {
         // Deepseek doesn't support images
         if (imageUrl) {
-          return res.status(400).json({ message: "Deepseek no soporta análisis de imágenes. Por favor, configura OpenAI para usar esta funcionalidad." });
+          return res.status(400).json({ message: "Deepseek no soporta análisis de imágenes. Por favor, configura OpenAI o Claude para usar esta funcionalidad." });
         }
 
         const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -853,6 +854,54 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
         promptTokens = data.usage?.prompt_tokens || 0;
         completionTokens = data.usage?.completion_tokens || 0;
         model = 'deepseek-chat';
+      } else if (aiConfig.activeProvider === 'claude') {
+        const anthropic = new Anthropic({ apiKey: activeKey });
+        
+        // Use Claude 3.5 Sonnet for vision
+        model = 'claude-3-5-sonnet-20241022';
+        
+        // Convert messages to Claude format
+        const claudeMessages: any[] = [];
+        for (const msg of messages) {
+          if (msg.role === 'system') continue; // Claude handles system message separately
+          
+          if (Array.isArray(msg.content)) {
+            // Message with image
+            claudeMessages.push({
+              role: msg.role,
+              content: msg.content.map((c: any) => {
+                if (c.type === 'image_url') {
+                  return {
+                    type: 'image',
+                    source: {
+                      type: 'base64',
+                      media_type: 'image/jpeg',
+                      data: c.image_url.url.replace(/^data:image\/\w+;base64,/, '')
+                    }
+                  };
+                }
+                return c;
+              })
+            });
+          } else {
+            claudeMessages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
+        }
+        
+        const completion = await anthropic.messages.create({
+          model,
+          max_tokens: 2000,
+          temperature: 0.7,
+          system: messages.find((m: any) => m.role === 'system')?.content || '',
+          messages: claudeMessages,
+        });
+
+        aiResponse = completion.content[0].type === 'text' ? completion.content[0].text : '';
+        promptTokens = completion.usage.input_tokens || 0;
+        completionTokens = completion.usage.output_tokens || 0;
       }
 
       // Save assistant response
@@ -865,8 +914,17 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       });
 
       // Log AI usage
-      const inputPrice = aiConfig.activeProvider === 'openai' ? aiConfig.openaiInputPrice : aiConfig.deepseekInputPrice;
-      const outputPrice = aiConfig.activeProvider === 'openai' ? aiConfig.openaiOutputPrice : aiConfig.deepseekOutputPrice;
+      let inputPrice, outputPrice;
+      if (aiConfig.activeProvider === 'openai') {
+        inputPrice = aiConfig.openaiInputPrice;
+        outputPrice = aiConfig.openaiOutputPrice;
+      } else if (aiConfig.activeProvider === 'deepseek') {
+        inputPrice = aiConfig.deepseekInputPrice;
+        outputPrice = aiConfig.deepseekOutputPrice;
+      } else {
+        inputPrice = aiConfig.claudeInputPrice;
+        outputPrice = aiConfig.claudeOutputPrice;
+      }
       const estimatedCost = Math.round((promptTokens * inputPrice + completionTokens * outputPrice) / 1000000);
 
       await storage.createAiUsageLog({
@@ -1421,7 +1479,7 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
     try {
       const { activeProvider } = req.body;
       
-      if (!activeProvider || !['openai', 'deepseek'].includes(activeProvider)) {
+      if (!activeProvider || !['openai', 'deepseek', 'claude'].includes(activeProvider)) {
         return res.status(400).json({ message: "Proveedor de IA inválido" });
       }
 
@@ -1438,7 +1496,8 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       const config = await storage.getAiConfig();
       res.json({
         openai: !!config.openaiApiKey || !!process.env.OPENAI_API_KEY,
-        deepseek: !!config.deepseekApiKey || !!process.env.DEEPSEEK_API_KEY
+        deepseek: !!config.deepseekApiKey || !!process.env.DEEPSEEK_API_KEY,
+        claude: !!config.claudeApiKey || !!process.env.ANTHROPIC_API_KEY
       });
     } catch (error) {
       console.error("Error checking API keys status:", error);
@@ -1448,9 +1507,9 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
 
   app.post('/api/ai-config/update-keys', isAuthenticated, requireRole('admin_auto_host', 'super_admin'), async (req: any, res) => {
     try {
-      const { openaiApiKey, deepseekApiKey } = req.body;
+      const { openaiApiKey, deepseekApiKey, claudeApiKey } = req.body;
       
-      await storage.updateAiApiKeys(openaiApiKey, deepseekApiKey);
+      await storage.updateAiApiKeys(openaiApiKey, deepseekApiKey, claudeApiKey);
       
       res.json({ 
         success: true, 
@@ -1535,6 +1594,37 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
           return res.status(500).json({ 
             success: false, 
             message: `Error al conectar con Deepseek: ${error.message}` 
+          });
+        }
+      } else if (provider === 'claude') {
+        const apiKey = keys.claude || process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "ANTHROPIC_API_KEY no está configurada" 
+          });
+        }
+
+        try {
+          const Anthropic = (await import('@anthropic-ai/sdk')).default;
+          const anthropic = new Anthropic({ apiKey });
+          
+          const response = await anthropic.messages.create({
+            model: "claude-3-5-sonnet-20241022",
+            messages: [{ role: "user", content: "Responde solo con 'OK'" }],
+            max_tokens: 10,
+          });
+
+          const testResult = response.content[0].type === 'text' ? response.content[0].text : 'OK';
+          return res.json({ 
+            success: true, 
+            message: "Conexión exitosa con Claude",
+            details: `Respuesta del modelo: ${testResult}`
+          });
+        } catch (error: any) {
+          return res.status(500).json({ 
+            success: false, 
+            message: `Error al conectar con Claude: ${error.message}` 
           });
         }
       } else {

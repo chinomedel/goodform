@@ -134,7 +134,7 @@ export interface IStorage {
   // AI Config operations
   getAiConfig(): Promise<AiConfig>;
   updateAiConfig(config: Partial<InsertAiConfig>): Promise<AiConfig>;
-  updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig>;
+  updateAiApiKeys(openaiKey?: string, deepseekKey?: string, claudeKey?: string): Promise<AiConfig>;
   updateAiPricing(pricing: {
     openaiInputPrice?: number;
     openaiOutputPrice?: number;
@@ -142,8 +142,11 @@ export interface IStorage {
     deepseekInputPrice?: number;
     deepseekOutputPrice?: number;
     deepseekCachePrice?: number;
+    claudeInputPrice?: number;
+    claudeOutputPrice?: number;
+    claudeCachePrice?: number;
   }): Promise<AiConfig>;
-  getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }>;
+  getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string; claude?: string }>;
   
   // AI Usage Logs operations
   createAiUsageLog(log: InsertAiUsageLog): Promise<AiUsageLog>;
@@ -603,7 +606,7 @@ export class DatabaseStorage implements IStorage {
     return config;
   }
 
-  async updateAiApiKeys(openaiKey?: string, deepseekKey?: string): Promise<AiConfig> {
+  async updateAiApiKeys(openaiKey?: string, deepseekKey?: string, claudeKey?: string): Promise<AiConfig> {
     const { encrypt } = await import('./crypto-utils');
     
     const updateData: any = { updatedAt: new Date() };
@@ -616,6 +619,10 @@ export class DatabaseStorage implements IStorage {
       updateData.deepseekApiKey = deepseekKey ? encrypt(deepseekKey) : null;
     }
     
+    if (claudeKey !== undefined) {
+      updateData.claudeApiKey = claudeKey ? encrypt(claudeKey) : null;
+    }
+    
     const [config] = await db
       .update(aiConfig)
       .set(updateData)
@@ -625,7 +632,7 @@ export class DatabaseStorage implements IStorage {
     return config;
   }
 
-  async getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string }> {
+  async getDecryptedApiKeys(): Promise<{ openai?: string; deepseek?: string; claude?: string }> {
     const { decrypt } = await import('./crypto-utils');
     
     const config = await this.getAiConfig();
@@ -633,6 +640,7 @@ export class DatabaseStorage implements IStorage {
     return {
       openai: config.openaiApiKey ? decrypt(config.openaiApiKey) : undefined,
       deepseek: config.deepseekApiKey ? decrypt(config.deepseekApiKey) : undefined,
+      claude: config.claudeApiKey ? decrypt(config.claudeApiKey) : undefined,
     };
   }
 
@@ -643,6 +651,9 @@ export class DatabaseStorage implements IStorage {
     deepseekInputPrice?: number;
     deepseekOutputPrice?: number;
     deepseekCachePrice?: number;
+    claudeInputPrice?: number;
+    claudeOutputPrice?: number;
+    claudeCachePrice?: number;
   }): Promise<AiConfig> {
     const updateData: any = { updatedAt: new Date() };
     
@@ -663,6 +674,15 @@ export class DatabaseStorage implements IStorage {
     }
     if (pricing.deepseekCachePrice !== undefined) {
       updateData.deepseekCachePrice = pricing.deepseekCachePrice;
+    }
+    if (pricing.claudeInputPrice !== undefined) {
+      updateData.claudeInputPrice = pricing.claudeInputPrice;
+    }
+    if (pricing.claudeOutputPrice !== undefined) {
+      updateData.claudeOutputPrice = pricing.claudeOutputPrice;
+    }
+    if (pricing.claudeCachePrice !== undefined) {
+      updateData.claudeCachePrice = pricing.claudeCachePrice;
     }
     
     const [config] = await db
