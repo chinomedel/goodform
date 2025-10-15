@@ -166,6 +166,7 @@ export default function FormBuilderPage() {
   
   const [submitButtonText, setSubmitButtonText] = useState("Enviar respuesta");
   const [submitButtonColor, setSubmitButtonColor] = useState("#6366f1");
+  const [submitButtonBorderColor, setSubmitButtonBorderColor] = useState("#4f46e5");
   
   const [urlParams, setUrlParams] = useState<string[]>([]);
   const [newUrlParam, setNewUrlParam] = useState("");
@@ -181,6 +182,7 @@ export default function FormBuilderPage() {
   const endDateInputRef = useRef<HTMLInputElement>(null);
   const buttonTextDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const buttonColorDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const buttonBorderColorDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   
   const [draggedFieldId, setDraggedFieldId] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<LocalField | null>(null);
@@ -233,6 +235,7 @@ export default function FormBuilderPage() {
       setCustomJs(formData.customJs || "");
       setSubmitButtonText(formData.submitButtonText || "Enviar respuesta");
       setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
+      setSubmitButtonBorderColor(formData.submitButtonBorderColor || "#4f46e5");
       setUrlParams(formData.urlParams ? (formData.urlParams as string[]) : []);
       
       // Format dates for datetime-local input (preserving local timezone)
@@ -404,6 +407,20 @@ export default function FormBuilderPage() {
     buttonColorDebounceTimer.current = setTimeout(() => {
       if (formId) {
         updateFormMutation.mutate({ submitButtonColor: newColor });
+      }
+    }, 1000);
+  };
+
+  const handleButtonBorderColorChange = (newColor: string) => {
+    setSubmitButtonBorderColor(newColor);
+    
+    if (buttonBorderColorDebounceTimer.current) {
+      clearTimeout(buttonBorderColorDebounceTimer.current);
+    }
+    
+    buttonBorderColorDebounceTimer.current = setTimeout(() => {
+      if (formId) {
+        updateFormMutation.mutate({ submitButtonBorderColor: newColor });
       }
     }, 1000);
   };
@@ -799,7 +816,12 @@ export default function FormBuilderPage() {
                     type="button" 
                     className="w-full" 
                     disabled
-                    style={{ backgroundColor: submitButtonColor }}
+                    style={{ 
+                      backgroundColor: submitButtonColor,
+                      borderColor: submitButtonBorderColor,
+                      borderWidth: '2px',
+                      borderStyle: 'solid'
+                    }}
                     data-testid="button-submit-preview"
                   >
                     {submitButtonText}
@@ -866,6 +888,26 @@ export default function FormBuilderPage() {
                       placeholder="#6366f1"
                       className="flex-1"
                       data-testid="input-button-color-text"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Color del borde</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      type="color"
+                      value={submitButtonBorderColor}
+                      onChange={(e) => handleButtonBorderColorChange(e.target.value)}
+                      className="w-14 h-9 p-1 cursor-pointer"
+                      data-testid="input-button-border-color-picker"
+                    />
+                    <Input
+                      type="text"
+                      value={submitButtonBorderColor}
+                      onChange={(e) => handleButtonBorderColorChange(e.target.value)}
+                      placeholder="#4f46e5"
+                      className="flex-1"
+                      data-testid="input-button-border-color-text"
                     />
                   </div>
                 </div>
