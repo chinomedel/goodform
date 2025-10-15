@@ -8,9 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface ConditionalLogic {
+  enabled: boolean;
+  logicType: "and" | "or";
+  conditions: Array<{
+    fieldId: string;
+    operator: "equals" | "not_equals" | "contains";
+    value: string;
+  }>;
+}
 
 interface FormField {
   id: string;
@@ -19,6 +30,7 @@ interface FormField {
   placeholder?: string;
   required: boolean;
   options?: string[];
+  conditionalLogic?: ConditionalLogic | null;
 }
 
 export default function PublicFormPage() {
@@ -71,13 +83,56 @@ export default function PublicFormPage() {
     },
   });
 
+  // Evaluate if a field should be shown based on conditional logic
+  const shouldShowField = (field: FormField): boolean => {
+    if (!field.conditionalLogic || !field.conditionalLogic.enabled || !field.conditionalLogic.conditions.length) {
+      return true;
+    }
+
+    const { logicType, conditions } = field.conditionalLogic;
+
+    const evaluateCondition = (condition: ConditionalLogic['conditions'][0]): boolean => {
+      const answer = answers[condition.fieldId];
+      
+      switch (condition.operator) {
+        case "equals":
+          if (Array.isArray(answer)) {
+            return answer.includes(condition.value);
+          }
+          return answer === condition.value;
+        
+        case "not_equals":
+          if (Array.isArray(answer)) {
+            return !answer.includes(condition.value);
+          }
+          return answer !== condition.value;
+        
+        case "contains":
+          if (Array.isArray(answer)) {
+            return answer.includes(condition.value);
+          }
+          return false;
+        
+        default:
+          return false;
+      }
+    };
+
+    if (logicType === "and") {
+      return conditions.every(evaluateCondition);
+    } else {
+      return conditions.some(evaluateCondition);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!form) return;
 
-    // Validate required fields
-    for (const field of form.fields) {
+    // Validate required fields that are visible
+    const visibleFields = form.fields.filter(shouldShowField);
+    for (const field of visibleFields) {
       if (field.required && !answers[field.id]) {
         toast({
           title: "Campos requeridos",
@@ -245,7 +300,7 @@ export default function PublicFormPage() {
                   />
                 </div>
 
-                {form.fields.map((field: FormField) => (
+                {form.fields.filter(shouldShowField).map((field: FormField) => (
                 <div key={field.id} className="space-y-2">
                   <Label htmlFor={field.id}>
                     {field.label}
@@ -343,6 +398,29 @@ export default function PublicFormPage() {
                         </div>
                       ))}
                     </div>
+                  )}
+
+                  {field.type === 'radio' && field.options && (
+                    <RadioGroup
+                      value={answers[field.id] || ''}
+                      onValueChange={(value) => setAnswers({ ...answers, [field.id]: value })}
+                      required={field.required}
+                    >
+                      <div className="space-y-2">
+                        {field.options.map((option: string, idx: number) => (
+                          <div key={idx} className="flex items-center space-x-2">
+                            <RadioGroupItem
+                              id={`${field.id}-${idx}`}
+                              value={option}
+                              data-testid={`radio-${field.id}-${idx}`}
+                            />
+                            <Label htmlFor={`${field.id}-${idx}`} className="font-normal">
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </RadioGroup>
                   )}
 
                   {field.type === 'date' && (
