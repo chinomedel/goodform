@@ -1880,7 +1880,14 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       // Obtener configuración de AI
       const aiConfig = await storage.getAiConfig();
       const apiKeys = await storage.getDecryptedApiKeys();
-      const apiKey = aiConfig.activeProvider === 'openai' ? apiKeys.openai : apiKeys.deepseek;
+      let apiKey;
+      if (aiConfig.activeProvider === 'openai') {
+        apiKey = apiKeys.openai;
+      } else if (aiConfig.activeProvider === 'deepseek') {
+        apiKey = apiKeys.deepseek;
+      } else {
+        apiKey = apiKeys.claude;
+      }
 
       if (!apiKey) {
         return res.status(500).json({ 
@@ -2207,6 +2214,43 @@ Responde en español de manera clara y concisa.`;
               estimatedCost,
             });
           }
+        }
+      } else if (aiConfig.activeProvider === 'claude') {
+        // Claude no soporta function calling en este momento
+        // Proporcionar respuesta informativa
+        const Anthropic = (await import('@anthropic-ai/sdk')).default;
+        const anthropic = new Anthropic({ apiKey });
+
+        const completion = await anthropic.messages.create({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 2000,
+          system: systemMessage,
+          messages: [
+            { role: 'user', content: message }
+          ],
+        });
+
+        aiResponse = {
+          content: completion.content[0].type === 'text' ? completion.content[0].text : 'Lo siento, no puedo crear gráficos con Claude en este momento. Por favor, configura OpenAI o Deepseek como proveedor activo para usar esta funcionalidad.'
+        };
+
+        // Registrar uso de tokens
+        if (completion.usage) {
+          const inputPrice = aiConfig.claudeInputPrice || 300;
+          const outputPrice = aiConfig.claudeOutputPrice || 1500;
+          const inputCost = Math.round((completion.usage.input_tokens / 1000000) * inputPrice);
+          const outputCost = Math.round((completion.usage.output_tokens / 1000000) * outputPrice);
+          const estimatedCost = inputCost + outputCost;
+          await storage.createAiUsageLog({
+            provider: 'claude',
+            model: 'claude-3-5-sonnet-20241022',
+            formId,
+            userId: req.user.id,
+            promptTokens: completion.usage.input_tokens || 0,
+            completionTokens: completion.usage.output_tokens || 0,
+            totalTokens: (completion.usage.input_tokens || 0) + (completion.usage.output_tokens || 0),
+            estimatedCost,
+          });
         }
       }
 
