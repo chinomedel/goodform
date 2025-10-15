@@ -284,19 +284,7 @@ export default function FormBuilderPage() {
   }, [formData]);
 
   const updateFormMutation = useMutation({
-    mutationFn: (data: { 
-      title?: string; 
-      description?: string; 
-      builderMode?: 'visual' | 'code';
-      customHtml?: string;
-      customCss?: string;
-      customJs?: string;
-      submitButtonText?: string;
-      submitButtonColor?: string;
-      urlParams?: string[];
-      publishStartDate?: string | null;
-      publishEndDate?: string | null;
-    }) =>
+    mutationFn: (data: any) =>
       updateForm(formId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/forms", formId] });
@@ -832,7 +820,7 @@ export default function FormBuilderPage() {
         </main>
 
         <aside className="w-80 border-l border-border bg-muted/30 p-4 overflow-y-auto">
-          <h3 className="font-semibold mb-4">Configuración</h3>
+          <h3 className="font-semibold mb-4">Diseño</h3>
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-semibold">Estado</Label>
