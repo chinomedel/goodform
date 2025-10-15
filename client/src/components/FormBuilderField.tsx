@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { GripVertical, Trash2, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "date" | "textarea";
+type FieldType = "text" | "email" | "number" | "select" | "checkbox" | "radio" | "date" | "textarea";
 
 interface FormBuilderFieldProps {
   id: string;
@@ -27,6 +27,7 @@ const fieldIcons: Record<FieldType, string> = {
   number: "#",
   select: "▼",
   checkbox: "☐",
+  radio: "◉",
   date: "📅",
   textarea: "≡",
 };
@@ -45,7 +46,7 @@ export function FormBuilderField({
   onDragOver,
   onDragEnd,
 }: FormBuilderFieldProps) {
-  const needsOptions = type === 'select' || type === 'checkbox';
+  const needsOptions = type === 'select' || type === 'checkbox' || type === 'radio';
   
   return (
     <Card 
