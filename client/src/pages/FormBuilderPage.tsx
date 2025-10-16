@@ -187,6 +187,7 @@ export default function FormBuilderPage() {
   const [iframeHeight, setIframeHeight] = useState<string>("600");
   const [showChat, setShowChat] = useState<boolean>(true);
   const [shareSheetOpen, setShareSheetOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("html");
   
   const titleDebounceTimer = useRef<NodeJS.Timeout | null>(null);
   const descriptionDebounceTimer = useRef<NodeJS.Timeout | null>(null);
@@ -1039,7 +1040,7 @@ export default function FormBuilderPage() {
                   </div>
                 </Card>
 
-                <Card className="p-6 max-w-5xl mx-auto">
+                <Card className={`p-6 ${activeTab !== 'preview' ? 'max-w-5xl mx-auto' : ''}`}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Editor de Código Personalizado</h3>
                     <div className="flex items-center gap-2">
@@ -1252,7 +1253,7 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                       </Dialog>
                     </div>
                   </div>
-                <Tabs defaultValue="html" className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="w-full">
                     <TabsTrigger value="html" className="flex-1" data-testid="tab-html">
                       HTML
@@ -1301,9 +1302,9 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                     />
                   </TabsContent>
 
-                  <TabsContent value="preview" className="mt-4">
-                    <Label className="mb-2 block">Vista Previa - Ancho Completo</Label>
-                    <div className="w-full bg-muted/30 border rounded-lg overflow-hidden">
+                  <TabsContent value="preview" className="mt-4 -mx-6 -mb-6">
+                    <Label className="mb-2 block px-6">Vista Previa - Ancho Completo</Label>
+                    <div className="w-full bg-muted/30 border-t">
                       <iframe
                         srcDoc={`
                           <!DOCTYPE html>
@@ -1328,7 +1329,7 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                             </body>
                           </html>
                         `}
-                        className="w-full min-h-[600px] border-0"
+                        className="w-full h-[calc(100vh-300px)] border-0"
                         title="Form Preview"
                         sandbox="allow-scripts"
                       />
