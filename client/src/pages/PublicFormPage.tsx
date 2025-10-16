@@ -74,7 +74,7 @@ export default function PublicFormPage() {
 
     // Load Google Fonts from the form's googleFontsUrls field
     if (form?.googleFontsUrls && form.googleFontsUrls.length > 0) {
-      form.googleFontsUrls.forEach(url => {
+      form.googleFontsUrls.forEach((url: string) => {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = url;
