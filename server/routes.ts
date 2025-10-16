@@ -1142,24 +1142,80 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Respuestas');
 
-      // Add headers
-      const headers = ['ID', 'Fecha de Envío', 'Email'];
-      form.fields.forEach(field => {
-        headers.push(field.label);
+      // Determinar si hay campos del formulario
+      const hasFormFields = form.fields && form.fields.length > 0;
+      const dynamicColumns: string[] = [];
+      const urlParamColumns: string[] = [];
+      
+      // Si no hay campos del formulario, extraer columnas dinámicas de las respuestas
+      if (!hasFormFields && responses.length > 0) {
+        const allKeys = new Set<string>();
+        responses.forEach((response) => {
+          const answers = response.answers as Record<string, any>;
+          Object.keys(answers).forEach(key => {
+            if (key !== 'email') {
+              allKeys.add(key);
+            }
+          });
+        });
+        dynamicColumns.push(...Array.from(allKeys).sort());
+      }
+      
+      // Extraer columnas de urlParams
+      if (responses.length > 0) {
+        const allUrlParams = new Set<string>();
+        responses.forEach((response) => {
+          const params = response.urlParams as Record<string, string> | null;
+          if (params) {
+            Object.keys(params).forEach(key => allUrlParams.add(key));
+          }
+        });
+        urlParamColumns.push(...Array.from(allUrlParams).sort());
+      }
+
+      // Add headers - igual que la tabla del frontend
+      const headers = ['Fecha', 'Email'];
+      
+      if (hasFormFields) {
+        form.fields.forEach(field => {
+          headers.push(field.label);
+        });
+      } else {
+        dynamicColumns.forEach(column => {
+          headers.push(column);
+        });
+      }
+      
+      urlParamColumns.forEach(param => {
+        headers.push(param);
       });
+      
       worksheet.addRow(headers);
 
       // Add data
       responses.forEach(response => {
         const row = [
-          response.id,
-          response.submittedAt?.toISOString() || '',
+          response.submittedAt ? new Date(response.submittedAt).toLocaleString('es-ES') : '',
           response.respondentEmail || '',
         ];
         
         const answers = response.answers as Record<string, any>;
-        form.fields.forEach(field => {
-          row.push(answers[field.id] || '');
+        const params = response.urlParams as Record<string, string> | null;
+        
+        if (hasFormFields) {
+          form.fields.forEach(field => {
+            const value = answers[field.id];
+            row.push(Array.isArray(value) ? value.join(', ') : (value || ''));
+          });
+        } else {
+          dynamicColumns.forEach(column => {
+            const value = answers[column];
+            row.push(Array.isArray(value) ? value.join(', ') : (value || ''));
+          });
+        }
+        
+        urlParamColumns.forEach(param => {
+          row.push(params?.[param] || '');
         });
         
         worksheet.addRow(row);
