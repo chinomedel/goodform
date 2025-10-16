@@ -86,7 +86,6 @@ export default function PublicFormPage() {
       if (form.customHtml) {
         // Unescape double-encoded quotes that may come from database
         const cleanHtml = form.customHtml.replace(/""/g, '"');
-        console.log('📄 HTML (primeras líneas):', cleanHtml.substring(0, 500));
         
         // Use DOMParser to parse the full HTML document structure
         const parser = new DOMParser();
