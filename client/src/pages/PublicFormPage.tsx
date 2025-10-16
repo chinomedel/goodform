@@ -271,23 +271,26 @@ export default function PublicFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container mx-auto max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-3xl" data-testid="text-form-title">{form.title}</CardTitle>
-            {form.description && (
-              <CardDescription className="text-base">{form.description}</CardDescription>
-            )}
-          </CardHeader>
-          <CardContent>
-            {form.builderMode === 'code' ? (
-              <div className="custom-form-container">
-                <div dangerouslySetInnerHTML={{ __html: form.customHtml || '' }} />
-                <style>{form.customCss}</style>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="min-h-screen bg-background">
+      {form.builderMode === 'code' ? (
+        // Modo código: ancho completo, sin restricciones
+        <div className="w-full h-full">
+          <div dangerouslySetInnerHTML={{ __html: form.customHtml || '' }} />
+          <style>{form.customCss}</style>
+        </div>
+      ) : (
+        // Modo visual: layout con Card y máximo ancho
+        <div className="py-12">
+          <div className="container mx-auto max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-3xl" data-testid="text-form-title">{form.title}</CardTitle>
+                {form.description && (
+                  <CardDescription className="text-base">{form.description}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email (opcional)</Label>
                   <Input
@@ -452,11 +455,12 @@ export default function PublicFormPage() {
                     form.submitButtonText || 'Enviar respuesta'
                   )}
                 </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
