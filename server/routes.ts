@@ -962,6 +962,11 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       const agentType = (req.query.agentType as string) || 'form_builder';
       const userId = req.user.id;
 
+      console.log('=== DELETE CHAT HISTORY ===');
+      console.log('formId:', formId);
+      console.log('agentType from query:', req.query.agentType);
+      console.log('agentType final:', agentType);
+
       // Validate agentType
       if (agentType !== 'form_builder' && agentType !== 'analyst') {
         return res.status(400).json({ message: "Invalid agent type" });
@@ -973,6 +978,7 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       }
 
       await storage.deleteChatHistory(formId, agentType);
+      console.log('Chat history deleted successfully for agentType:', agentType);
       res.json({ message: "Chat history cleared" });
     } catch (error) {
       console.error("Error clearing chat history:", error);
