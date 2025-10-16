@@ -2065,7 +2065,13 @@ Responde en español de manera clara y concisa.`;
       let toolCalls: any[] = [];
       let toolResults: any[] = [];
 
+      console.log('=== ANALYST CHAT POST ===');
+      console.log('formId:', formId);
+      console.log('message:', message);
+      console.log('userId:', req.user.id);
+      
       // Guardar mensaje del usuario primero
+      console.log('About to save user message...');
       await storage.createChatMessage({
         formId,
         userId: req.user.id,
@@ -2074,9 +2080,11 @@ Responde en español de manera clara y concisa.`;
         content: message,
         imageUrl: null,
       });
+      console.log('User message saved successfully');
 
       // Obtener historial de chat para contexto
       const chatHistory = await storage.getChatHistory(formId, 'analyst');
+      console.log('Chat history length:', chatHistory.length);
 
       if (aiConfig.activeProvider === 'openai') {
         const OpenAI = (await import('openai')).default;
