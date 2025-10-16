@@ -41,9 +41,7 @@ export default function PublicFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [urlParams, setUrlParams] = useState<Record<string, string>>({});
   const [processedHtml, setProcessedHtml] = useState<string>('');
-  const [processedCss, setProcessedCss] = useState<string>('');
   const headElementsRef = useRef<HTMLElement[]>([]);
-  const scriptElementRef = useRef<HTMLScriptElement | null>(null);
 
   const { data: form, isLoading, error } = useQuery({
     queryKey: ['/api/public/forms', id],
@@ -71,120 +69,49 @@ export default function PublicFormPage() {
 
   // Extract and inject <link> tags and @import styles into <head> for proper loading
   useEffect(() => {
-    if (form?.builderMode === 'code') {
+    if (form?.builderMode === 'code' && form?.customHtml) {
       // Clean up previous head elements
       headElementsRef.current.forEach(el => el.remove());
       headElementsRef.current = [];
-      
-      // Clean up previous script
-      if (scriptElementRef.current) {
-        scriptElementRef.current.remove();
-        scriptElementRef.current = null;
-      }
 
-      // Process HTML if exists
-      if (form.customHtml) {
-        // Unescape double-encoded quotes that may come from database
-        const cleanHtml = form.customHtml.replace(/""/g, '"');
-        
-        // Use DOMParser to parse the full HTML document structure
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(cleanHtml, 'text/html');
+      // Create a temporary div to parse the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = form.customHtml;
 
-        // Extract all <link> tags from the parsed document (including from <head>)
-        const linkTags = doc.querySelectorAll('link');
-        console.log('🔗 Links encontrados en HTML:', linkTags.length);
-        linkTags.forEach(link => {
-          const newLink = document.createElement('link');
-          Array.from(link.attributes).forEach(attr => {
-            newLink.setAttribute(attr.name, attr.value);
-          });
-          console.log('✅ Link agregado al head:', newLink.href || newLink.getAttribute('href'));
-          document.head.appendChild(newLink);
-          headElementsRef.current.push(newLink);
-          link.remove(); // Remove from the HTML to avoid duplication
+      // Extract all <link> tags (like Google Fonts)
+      const linkTags = tempDiv.querySelectorAll('link');
+      linkTags.forEach(link => {
+        const newLink = document.createElement('link');
+        Array.from(link.attributes).forEach(attr => {
+          newLink.setAttribute(attr.name, attr.value);
         });
+        document.head.appendChild(newLink);
+        headElementsRef.current.push(newLink);
+        link.remove(); // Remove from the HTML to avoid duplication
+      });
 
-        // Extract <style> tags with @import
-        const styleTags = doc.querySelectorAll('style');
-        styleTags.forEach(style => {
-          if (style.textContent?.includes('@import')) {
-            const newStyle = document.createElement('style');
-            newStyle.textContent = style.textContent;
-            document.head.appendChild(newStyle);
-            headElementsRef.current.push(newStyle);
-            style.remove(); // Remove from the HTML to avoid duplication
-          }
-        });
-
-        // Remove all <script> tags from HTML to avoid duplicate execution
-        const scriptTags = doc.querySelectorAll('script');
-        scriptTags.forEach(script => script.remove());
-
-        // Extract only the body content for rendering
-        // This avoids having duplicate <html>, <head>, <body> tags
-        const bodyContent = doc.body?.innerHTML || form.customHtml;
-        setProcessedHtml(bodyContent);
-      }
-
-      // Process CSS to extract @import statements
-      if (form.customCss) {
-        // Regex to match @import statements - improved to capture full URLs
-        const importRegex = /@import\s+url\(['"]([^'"]+)['"]\)[^;]*;/gi;
-        const imports: string[] = [];
-        let match;
-        
-        // Extract all @import URLs
-        while ((match = importRegex.exec(form.customCss)) !== null) {
-          imports.push(match[1]); // The URL is in capture group 1
+      // Extract <style> tags with @import
+      const styleTags = tempDiv.querySelectorAll('style');
+      styleTags.forEach(style => {
+        if (style.textContent?.includes('@import')) {
+          const newStyle = document.createElement('style');
+          newStyle.textContent = style.textContent;
+          document.head.appendChild(newStyle);
+          headElementsRef.current.push(newStyle);
+          style.remove(); // Remove from the HTML to avoid duplication
         }
+      });
 
-        // Create <link> tags for each @import
-        imports.forEach(url => {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = url;
-          document.head.appendChild(link);
-          headElementsRef.current.push(link);
-        });
-
-        // Remove @import statements from CSS to avoid duplication
-        const cleanedCss = form.customCss.replace(importRegex, '').trim();
-        setProcessedCss(cleanedCss);
-      }
-
-      // Inject custom JavaScript using eval to avoid const redeclaration errors
-      if (form.customJs) {
-        // Use eval to execute JavaScript - it allows re-execution without const redeclaration errors
-        // in development mode (hot reload). In production this won't be an issue.
-        try {
-          // Execute in a delayed manner to ensure DOM is ready
-          setTimeout(() => {
-            try {
-              // Using indirect eval to run in global scope
-              (0, eval)(form.customJs);
-            } catch (error: any) {
-              if (!error.message?.includes('already been declared')) {
-                console.error('Error en JavaScript personalizado:', error);
-              }
-            }
-          }, 100);
-        } catch (error) {
-          console.error('Error al cargar JavaScript:', error);
-        }
-      }
+      // Save the processed HTML (without link/style tags that were moved to head)
+      setProcessedHtml(tempDiv.innerHTML);
     }
 
     // Cleanup on unmount
     return () => {
       headElementsRef.current.forEach(el => el.remove());
       headElementsRef.current = [];
-      if (scriptElementRef.current) {
-        scriptElementRef.current.remove();
-        scriptElementRef.current = null;
-      }
     };
-  }, [form?.builderMode, form?.customHtml, form?.customCss, form?.customJs]);
+  }, [form?.builderMode, form?.customHtml]);
 
   const submitMutation = useMutation({
     mutationFn: () => submitPublicForm(id!, { answers, email, urlParams }),
@@ -397,7 +324,7 @@ export default function PublicFormPage() {
         // Modo código: ancho completo, sin restricciones
         <div className="w-full h-full">
           <div dangerouslySetInnerHTML={{ __html: processedHtml || form.customHtml || '' }} />
-          <style>{processedCss || form.customCss}</style>
+          <style>{form.customCss}</style>
         </div>
       ) : (
         // Modo visual: layout con Card y máximo ancho
