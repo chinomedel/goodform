@@ -2042,14 +2042,37 @@ Responde en español de manera clara y concisa.`;
       let toolCalls: any[] = [];
       let toolResults: any[] = [];
 
+      // Guardar mensaje del usuario primero
+      await storage.createChatMessage({
+        formId,
+        userId: req.user.id,
+        agentType: 'analyst',
+        role: 'user',
+        content: message,
+        imageUrl: null,
+      });
+
+      // Obtener historial de chat para contexto
+      const chatHistory = await storage.getChatHistory(formId, 'analyst');
+
       if (aiConfig.activeProvider === 'openai') {
         const OpenAI = (await import('openai')).default;
         const openai = new OpenAI({ apiKey });
 
-        const messages = [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: message }
+        // Preparar mensajes con historial
+        const messages: any[] = [
+          { role: 'system', content: systemMessage }
         ];
+
+        // Agregar historial (excluyendo mensajes de sistema)
+        for (const msg of chatHistory) {
+          if (msg.role !== 'system') {
+            messages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
+        }
 
         const completion = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
@@ -2194,10 +2217,20 @@ Responde en español de manera clara y concisa.`;
           baseURL: 'https://api.deepseek.com'
         });
 
-        const messages = [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: message }
+        // Preparar mensajes con historial
+        const messages: any[] = [
+          { role: 'system', content: systemMessage }
         ];
+
+        // Agregar historial (excluyendo mensajes de sistema)
+        for (const msg of chatHistory) {
+          if (msg.role !== 'system') {
+            messages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
+        }
 
         const completion = await deepseek.chat.completions.create({
           model: 'deepseek-chat',
@@ -2341,13 +2374,24 @@ Responde en español de manera clara y concisa.`;
         const Anthropic = (await import('@anthropic-ai/sdk')).default;
         const anthropic = new Anthropic({ apiKey });
 
+        // Preparar mensajes con historial para Claude
+        const claudeMessages: any[] = [];
+
+        // Agregar historial (excluyendo mensajes de sistema)
+        for (const msg of chatHistory) {
+          if (msg.role !== 'system') {
+            claudeMessages.push({
+              role: msg.role,
+              content: msg.content
+            });
+          }
+        }
+
         const completion = await anthropic.messages.create({
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 2000,
           system: systemMessage,
-          messages: [
-            { role: 'user', content: message }
-          ],
+          messages: claudeMessages,
         });
 
         aiResponse = {
@@ -2373,14 +2417,6 @@ Responde en español de manera clara y concisa.`;
           });
         }
       }
-
-      // Guardar mensaje del usuario
-      await storage.createChatMessage({
-        formId,
-        userId: req.user.id,
-        role: 'user',
-        content: message,
-      });
 
       // Generar contenido del asistente si está vacío
       let assistantContent = aiResponse.content || '';
@@ -2408,8 +2444,10 @@ Responde en español de manera clara y concisa.`;
       await storage.createChatMessage({
         formId,
         userId: req.user.id,
+        agentType: 'analyst',
         role: 'assistant',
         content: assistantContent,
+        imageUrl: null,
         toolCalls: toolCalls.length > 0 ? toolCalls : null,
       });
 
