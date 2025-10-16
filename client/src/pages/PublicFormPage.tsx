@@ -43,6 +43,7 @@ export default function PublicFormPage() {
   const [processedHtml, setProcessedHtml] = useState<string>('');
   const [processedCss, setProcessedCss] = useState<string>('');
   const headElementsRef = useRef<HTMLElement[]>([]);
+  const scriptElementRef = useRef<HTMLScriptElement | null>(null);
 
   const { data: form, isLoading, error } = useQuery({
     queryKey: ['/api/public/forms', id],
@@ -74,6 +75,12 @@ export default function PublicFormPage() {
       // Clean up previous head elements
       headElementsRef.current.forEach(el => el.remove());
       headElementsRef.current = [];
+      
+      // Clean up previous script
+      if (scriptElementRef.current) {
+        scriptElementRef.current.remove();
+        scriptElementRef.current = null;
+      }
 
       // Process HTML if exists
       if (form.customHtml) {
@@ -105,14 +112,18 @@ export default function PublicFormPage() {
           }
         });
 
-        // Save the processed HTML (without link/style tags that were moved to head)
+        // Remove all <script> tags from HTML to avoid duplicate execution
+        const scriptTags = tempDiv.querySelectorAll('script');
+        scriptTags.forEach(script => script.remove());
+
+        // Save the processed HTML (without link/style/script tags)
         setProcessedHtml(tempDiv.innerHTML);
       }
 
       // Process CSS to extract @import statements
       if (form.customCss) {
-        // Regex to match @import statements
-        const importRegex = /@import\s+(?:url\()?['"]?([^'"\)]+)['"]?\)?[^;]*;/gi;
+        // Regex to match @import statements - improved to capture full URLs
+        const importRegex = /@import\s+url\(['"]([^'"]+)['"]\)[^;]*;/gi;
         const imports: string[] = [];
         let match;
         
@@ -134,14 +145,39 @@ export default function PublicFormPage() {
         const cleanedCss = form.customCss.replace(importRegex, '').trim();
         setProcessedCss(cleanedCss);
       }
+
+      // Inject custom JavaScript using eval to avoid const redeclaration errors
+      if (form.customJs) {
+        // Use eval to execute JavaScript - it allows re-execution without const redeclaration errors
+        // in development mode (hot reload). In production this won't be an issue.
+        try {
+          // Execute in a delayed manner to ensure DOM is ready
+          setTimeout(() => {
+            try {
+              // Using indirect eval to run in global scope
+              (0, eval)(form.customJs);
+            } catch (error: any) {
+              if (!error.message?.includes('already been declared')) {
+                console.error('Error en JavaScript personalizado:', error);
+              }
+            }
+          }, 100);
+        } catch (error) {
+          console.error('Error al cargar JavaScript:', error);
+        }
+      }
     }
 
     // Cleanup on unmount
     return () => {
       headElementsRef.current.forEach(el => el.remove());
       headElementsRef.current = [];
+      if (scriptElementRef.current) {
+        scriptElementRef.current.remove();
+        scriptElementRef.current = null;
+      }
     };
-  }, [form?.builderMode, form?.customHtml, form?.customCss]);
+  }, [form?.builderMode, form?.customHtml, form?.customCss, form?.customJs]);
 
   const submitMutation = useMutation({
     mutationFn: () => submitPublicForm(id!, { answers, email, urlParams }),
