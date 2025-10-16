@@ -1956,6 +1956,65 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
       const existingCharts = await executeGetExistingCharts(formId);
       const responses = await storage.getFormResponses(formId);
 
+      // Extraer columnas dinámicas y URL params de las respuestas
+      const hasFormFields = fields && fields.length > 0;
+      const dynamicColumns: string[] = [];
+      const urlParamColumns: string[] = [];
+      
+      if (!hasFormFields && responses.length > 0) {
+        const allKeys = new Set<string>();
+        responses.forEach((response) => {
+          const answers = response.answers as Record<string, any>;
+          Object.keys(answers).forEach(key => {
+            if (key !== 'email') {
+              allKeys.add(key);
+            }
+          });
+        });
+        dynamicColumns.push(...Array.from(allKeys).sort());
+      }
+      
+      if (responses.length > 0) {
+        const allUrlParams = new Set<string>();
+        responses.forEach((response) => {
+          const params = response.urlParams as Record<string, string> | null;
+          if (params) {
+            Object.keys(params).forEach(key => allUrlParams.add(key));
+          }
+        });
+        urlParamColumns.push(...Array.from(allUrlParams).sort());
+      }
+
+      // Preparar muestra de respuestas para el contexto (primeras 30)
+      const responseSample = responses.slice(0, 30).map((response) => {
+        const answers = response.answers as Record<string, any>;
+        const params = response.urlParams as Record<string, string> | null;
+        const row: any = {
+          fecha: response.submittedAt ? new Date(response.submittedAt).toLocaleString('es-ES') : '',
+          email: response.respondentEmail || '',
+        };
+        
+        if (hasFormFields) {
+          fields.forEach((field: any) => {
+            const value = answers[field.id];
+            row[field.label] = Array.isArray(value) ? value.join(', ') : (value || '');
+          });
+        } else {
+          dynamicColumns.forEach(column => {
+            const value = answers[column];
+            row[column] = Array.isArray(value) ? value.join(', ') : (value || '');
+          });
+        }
+        
+        if (urlParamColumns.length > 0) {
+          urlParamColumns.forEach(param => {
+            row[param] = params?.[param] || '';
+          });
+        }
+        
+        return row;
+      });
+
       const systemMessage = `Eres un asistente de análisis de datos para formularios. 
 Tienes acceso a las siguientes herramientas para ayudar al usuario:
 - analyze_responses: Para calcular estadísticas y analizar datos
@@ -1968,10 +2027,15 @@ Tienes acceso a las siguientes herramientas para ayudar al usuario:
 Contexto del formulario:
 - Nombre: ${form.title}
 - Total de respuestas: ${responses.length}
-- Campos disponibles: ${JSON.stringify(fields)}
+- Campos disponibles: ${JSON.stringify(hasFormFields ? fields : dynamicColumns)}
+- Parámetros de URL capturados: ${JSON.stringify(urlParamColumns)}
 - Gráficos existentes: ${JSON.stringify(existingCharts)}
 
-Cuando el usuario te pida crear o modificar gráficos, usa las herramientas disponibles.
+Datos de las respuestas (mostrando ${responseSample.length} de ${responses.length}):
+${JSON.stringify(responseSample, null, 2)}
+
+Cuando el usuario te haga preguntas sobre los datos, puedes responder basándote en la muestra anterior.
+Si necesitas hacer análisis más complejos o crear gráficos, usa las herramientas disponibles.
 Responde en español de manera clara y concisa.`;
 
       let aiResponse: any;
