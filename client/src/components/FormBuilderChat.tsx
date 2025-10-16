@@ -19,7 +19,7 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const { toast } = useToast();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load chat history on mount
@@ -29,10 +29,8 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   const loadChatHistory = async () => {
     try {
@@ -170,7 +168,7 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4">
         {isLoadingHistory ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -223,6 +221,9 @@ export function FormBuilderChat({ formId, onInsertCode }: FormBuilderChatProps) 
                 </div>
               </div>
             )}
+            
+            {/* Invisible element at the end for auto-scroll */}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </ScrollArea>
