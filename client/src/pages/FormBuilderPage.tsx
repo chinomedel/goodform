@@ -1022,9 +1022,9 @@ export default function FormBuilderPage() {
           </>
         ) : (
           <>
-            <main className="flex-1 overflow-y-auto p-8">
-              <div className="max-w-5xl mx-auto space-y-6">
-                <Card className="p-6">
+            <main className="flex-1 overflow-y-auto">
+              <div className="space-y-6 p-8">
+                <Card className="p-6 max-w-5xl mx-auto">
                   <div className="space-y-4">
                     <div>
                       <Label>Descripción del formulario</Label>
@@ -1039,7 +1039,7 @@ export default function FormBuilderPage() {
                   </div>
                 </Card>
 
-                <Card className="p-6">
+                <Card className="p-6 max-w-5xl mx-auto">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Editor de Código Personalizado</h3>
                     <div className="flex items-center gap-2">
@@ -1302,8 +1302,8 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                   </TabsContent>
 
                   <TabsContent value="preview" className="mt-4">
-                    <Label className="mb-2 block">Vista Previa</Label>
-                    <Card className="p-6 bg-muted/30">
+                    <Label className="mb-2 block">Vista Previa - Ancho Completo</Label>
+                    <div className="w-full bg-muted/30 border rounded-lg overflow-hidden">
                       <iframe
                         srcDoc={`
                           <!DOCTYPE html>
@@ -1314,7 +1314,7 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                               <style>
                                 body { 
                                   margin: 0; 
-                                  padding: 20px; 
+                                  padding: 0; 
                                   font-family: system-ui, -apple-system, sans-serif;
                                 }
                                 ${customCss}
@@ -1328,11 +1328,11 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                             </body>
                           </html>
                         `}
-                        className="w-full min-h-[500px] border-0 rounded"
+                        className="w-full min-h-[600px] border-0"
                         title="Form Preview"
                         sandbox="allow-scripts"
                       />
-                    </Card>
+                    </div>
                   </TabsContent>
                 </Tabs>
               </Card>
