@@ -40,6 +40,8 @@ export default function PublicFormPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [urlParams, setUrlParams] = useState<Record<string, string>>({});
+  const [processedHtml, setProcessedHtml] = useState<string>('');
+  const headElementsRef = useRef<HTMLElement[]>([]);
 
   const { data: form, isLoading, error } = useQuery({
     queryKey: ['/api/public/forms', id],
@@ -64,6 +66,52 @@ export default function PublicFormPage() {
       setUrlParams(capturedParams);
     }
   }, [form]);
+
+  // Extract and inject <link> tags and @import styles into <head> for proper loading
+  useEffect(() => {
+    if (form?.builderMode === 'code' && form?.customHtml) {
+      // Clean up previous head elements
+      headElementsRef.current.forEach(el => el.remove());
+      headElementsRef.current = [];
+
+      // Create a temporary div to parse the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = form.customHtml;
+
+      // Extract all <link> tags (like Google Fonts)
+      const linkTags = tempDiv.querySelectorAll('link');
+      linkTags.forEach(link => {
+        const newLink = document.createElement('link');
+        Array.from(link.attributes).forEach(attr => {
+          newLink.setAttribute(attr.name, attr.value);
+        });
+        document.head.appendChild(newLink);
+        headElementsRef.current.push(newLink);
+        link.remove(); // Remove from the HTML to avoid duplication
+      });
+
+      // Extract <style> tags with @import
+      const styleTags = tempDiv.querySelectorAll('style');
+      styleTags.forEach(style => {
+        if (style.textContent?.includes('@import')) {
+          const newStyle = document.createElement('style');
+          newStyle.textContent = style.textContent;
+          document.head.appendChild(newStyle);
+          headElementsRef.current.push(newStyle);
+          style.remove(); // Remove from the HTML to avoid duplication
+        }
+      });
+
+      // Save the processed HTML (without link/style tags that were moved to head)
+      setProcessedHtml(tempDiv.innerHTML);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      headElementsRef.current.forEach(el => el.remove());
+      headElementsRef.current = [];
+    };
+  }, [form?.builderMode, form?.customHtml]);
 
   const submitMutation = useMutation({
     mutationFn: () => submitPublicForm(id!, { answers, email, urlParams }),
@@ -275,7 +323,7 @@ export default function PublicFormPage() {
       {form.builderMode === 'code' ? (
         // Modo código: ancho completo, sin restricciones
         <div className="w-full h-full">
-          <div dangerouslySetInnerHTML={{ __html: form.customHtml || '' }} />
+          <div dangerouslySetInnerHTML={{ __html: processedHtml || form.customHtml || '' }} />
           <style>{form.customCss}</style>
         </div>
       ) : (
