@@ -30,7 +30,7 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
   - **Database Schema**:
     - `block_reason` enum type with values: non_payment, login_attempts, general
     - User table columns: is_deleted (boolean NOT NULL DEFAULT false), block_reason (nullable), blocked_at (nullable timestamp)
-- **Data Export**: Exports form responses to Excel using ExcelJS.
+- **Data Export**: Exports form responses to Excel using ExcelJS. The export includes all columns visible in the frontend table: Fecha, Email, form fields (or dynamic columns if no fields defined), and URL parameters. Data is formatted consistently with the table display (dates in Spanish format, arrays as comma-separated values).
 - **Real-time Analytics**: Customizable charts (bar, line, pie, area, scatter) powered by Recharts, supporting various aggregation types and cross-analysis for both visual and code-based forms. Features an interactive ChartBuilder UI and API for chart management.
 - **AI Integration**: Supports multiple AI providers (OpenAI, Deepseek, Claude) configured via an admin page. Features two specialized AI agents with independent chat histories:
   - **Form Builder Agent** (`agentType: 'form_builder'`): Integrated into code mode form builder via collapsible side panel, helps create HTML/CSS/JavaScript forms with vision support for image-to-code conversion (GPT-4o for OpenAI, Claude 3.5 Sonnet for Anthropic). Provides guidance on field mapping with `data-field-name` attributes through conversational interface. Features:
@@ -42,7 +42,7 @@ The frontend is built with React and TypeScript, leveraging Shadcn/UI with Tailw
     - **Image Upload**: Supports image-to-code conversion with GPT-4 Vision
     - **Isolated Preview**: Code preview uses iframe to prevent CSS conflicts
     - Persistent chat history per form with natural conversation flow
-  - **Analyst Agent** (`agentType: 'analyst'`): Integrated into form responses page for natural language data analysis, automatic chart creation/editing/deletion via function calls (OpenAI and Deepseek only; Claude provides text-only analysis), and persistent chat history. Supports complex queries and cross-field analysis.
+  - **Analyst Agent** (`agentType: 'analyst'`): Integrated into form responses page for natural language data analysis, automatic chart creation/editing/deletion via function calls (OpenAI and Deepseek only; Claude provides text-only analysis), and persistent chat history. Supports complex queries and cross-field analysis. Receives a sample of up to 30 responses in the systemMessage formatted identically to the frontend table (including fecha, email, form fields/dynamic columns, and URL params) to enable data-aware conversations.
   - API keys are securely stored encrypted in PostgreSQL. Granular token pricing system with separate fields for input tokens, output tokens, and cache tokens per provider, with cost calculation: (prompt_tokens × inputPrice + completion_tokens × outputPrice) / 1,000,000. Prices stored in cents for precision.
   - Both agents maintain separate conversation histories through `agent_type` enum field in `chatMessages` table.
 - **SMTP Email Configuration**: Secure SMTP server configuration for email notifications, accessible to Super Admin and Admin Auto-host roles. Credentials are encrypted and stored in PostgreSQL.
