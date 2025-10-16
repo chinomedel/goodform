@@ -48,7 +48,7 @@ export function ChatAgent({ formId }: ChatAgentProps) {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (msg: string) => {
-      const data = await apiRequest("POST", `/api/forms/${formId}/chat`, { message: msg });
+      const data = await apiRequest("POST", `/api/forms/${formId}/analyst-chat`, { message: msg });
       return data;
     },
     onSuccess: (data: any) => {

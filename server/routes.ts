@@ -1929,8 +1929,8 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
     }
   });
 
-  // Chat Agent endpoint
-  app.post('/api/forms/:formId/chat', isAuthenticated, async (req: any, res) => {
+  // Analyst Agent Chat endpoint
+  app.post('/api/forms/:formId/analyst-chat', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
       const { message } = req.body;
