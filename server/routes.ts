@@ -688,14 +688,25 @@ export function registerRoutes(app: Express): Server {
   app.get('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
+      const agentType = (req.query.agentType as string) || 'form_builder';
       const userId = req.user.id;
 
-      // Check if user can edit form
-      if (!await canEditForm(formId, userId)) {
+      // Validate agentType
+      if (agentType !== 'form_builder' && agentType !== 'analyst') {
+        return res.status(400).json({ message: "Invalid agent type" });
+      }
+
+      // Check permissions based on agent type
+      // Form builder requires edit permission, analyst only requires access
+      const hasPermission = agentType === 'analyst' 
+        ? await canAccessForm(formId, userId)
+        : await canEditForm(formId, userId);
+
+      if (!hasPermission) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const history = await storage.getChatHistory(formId, 'form_builder');
+      const history = await storage.getChatHistory(formId, agentType);
       res.json(history);
     } catch (error) {
       console.error("Error fetching chat history:", error);
@@ -948,14 +959,20 @@ Responde en español de forma clara y profesional. Siempre muestra tu razonamien
   app.delete('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
+      const agentType = (req.query.agentType as string) || 'form_builder';
       const userId = req.user.id;
+
+      // Validate agentType
+      if (agentType !== 'form_builder' && agentType !== 'analyst') {
+        return res.status(400).json({ message: "Invalid agent type" });
+      }
 
       // Check if user can edit form
       if (!await canEditForm(formId, userId)) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      await storage.deleteChatHistory(formId, 'form_builder');
+      await storage.deleteChatHistory(formId, agentType);
       res.json({ message: "Chat history cleared" });
     } catch (error) {
       console.error("Error clearing chat history:", error);
@@ -2474,56 +2491,6 @@ Responde en español de manera clara y concisa.`;
       }
       
       res.status(500).json({ message: errorMessage });
-    }
-  });
-
-  // Get chat history for Analyst Agent
-  app.get('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
-    try {
-      const { formId } = req.params;
-      const form = await storage.getForm(formId);
-      
-      if (!form) {
-        return res.status(404).json({ message: "Formulario no encontrado" });
-      }
-
-      if (form.creatorId !== req.user.id) {
-        const permission = await storage.getUserFormPermission(formId, req.user.id);
-        if (!permission) {
-          return res.status(403).json({ message: "No tienes permisos para acceder a este formulario" });
-        }
-      }
-
-      const history = await storage.getChatHistory(formId, 'analyst');
-      res.json(history);
-    } catch (error) {
-      console.error("Error fetching chat history:", error);
-      res.status(500).json({ message: "Error al obtener historial" });
-    }
-  });
-
-  // Delete chat history for Analyst Agent
-  app.delete('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
-    try {
-      const { formId } = req.params;
-      const form = await storage.getForm(formId);
-      
-      if (!form) {
-        return res.status(404).json({ message: "Formulario no encontrado" });
-      }
-
-      if (form.creatorId !== req.user.id) {
-        const permission = await storage.getUserFormPermission(formId, req.user.id);
-        if (!permission || permission.permission === 'viewer') {
-          return res.status(403).json({ message: "No tienes permisos para borrar el historial" });
-        }
-      }
-
-      await storage.deleteChatHistory(formId, 'analyst');
-      res.json({ message: "Historial borrado exitosamente" });
-    } catch (error) {
-      console.error("Error deleting chat history:", error);
-      res.status(500).json({ message: "Error al borrar historial" });
     }
   });
 

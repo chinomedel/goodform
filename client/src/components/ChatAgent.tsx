@@ -38,9 +38,9 @@ export function ChatAgent({ formId }: ChatAgentProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: history = [], refetch } = useQuery<ChatMessage[]>({
-    queryKey: ['/api/forms', formId, 'chat', 'history'],
+    queryKey: ['/api/forms', formId, 'chat', 'history', 'analyst'],
     queryFn: async () => {
-      const response = await fetch(`/api/forms/${formId}/chat/history`);
+      const response = await fetch(`/api/forms/${formId}/chat/history?agentType=analyst`);
       if (!response.ok) throw new Error('Error al cargar historial');
       return response.json();
     },
@@ -80,7 +80,7 @@ export function ChatAgent({ formId }: ChatAgentProps) {
 
   const clearHistoryMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("DELETE", `/api/forms/${formId}/chat/history`, {});
+      await apiRequest("DELETE", `/api/forms/${formId}/chat/history?agentType=analyst`, {});
     },
     onSuccess: () => {
       refetch();
