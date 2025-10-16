@@ -41,6 +41,7 @@ export default function PublicFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [urlParams, setUrlParams] = useState<Record<string, string>>({});
   const [processedHtml, setProcessedHtml] = useState<string>('');
+  const [processedCss, setProcessedCss] = useState<string>('');
   const headElementsRef = useRef<HTMLElement[]>([]);
 
   const { data: form, isLoading, error } = useQuery({
@@ -69,41 +70,70 @@ export default function PublicFormPage() {
 
   // Extract and inject <link> tags and @import styles into <head> for proper loading
   useEffect(() => {
-    if (form?.builderMode === 'code' && form?.customHtml) {
+    if (form?.builderMode === 'code') {
       // Clean up previous head elements
       headElementsRef.current.forEach(el => el.remove());
       headElementsRef.current = [];
 
-      // Create a temporary div to parse the HTML
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = form.customHtml;
+      // Process HTML if exists
+      if (form.customHtml) {
+        // Create a temporary div to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = form.customHtml;
 
-      // Extract all <link> tags (like Google Fonts)
-      const linkTags = tempDiv.querySelectorAll('link');
-      linkTags.forEach(link => {
-        const newLink = document.createElement('link');
-        Array.from(link.attributes).forEach(attr => {
-          newLink.setAttribute(attr.name, attr.value);
+        // Extract all <link> tags (like Google Fonts)
+        const linkTags = tempDiv.querySelectorAll('link');
+        linkTags.forEach(link => {
+          const newLink = document.createElement('link');
+          Array.from(link.attributes).forEach(attr => {
+            newLink.setAttribute(attr.name, attr.value);
+          });
+          document.head.appendChild(newLink);
+          headElementsRef.current.push(newLink);
+          link.remove(); // Remove from the HTML to avoid duplication
         });
-        document.head.appendChild(newLink);
-        headElementsRef.current.push(newLink);
-        link.remove(); // Remove from the HTML to avoid duplication
-      });
 
-      // Extract <style> tags with @import
-      const styleTags = tempDiv.querySelectorAll('style');
-      styleTags.forEach(style => {
-        if (style.textContent?.includes('@import')) {
-          const newStyle = document.createElement('style');
-          newStyle.textContent = style.textContent;
-          document.head.appendChild(newStyle);
-          headElementsRef.current.push(newStyle);
-          style.remove(); // Remove from the HTML to avoid duplication
+        // Extract <style> tags with @import
+        const styleTags = tempDiv.querySelectorAll('style');
+        styleTags.forEach(style => {
+          if (style.textContent?.includes('@import')) {
+            const newStyle = document.createElement('style');
+            newStyle.textContent = style.textContent;
+            document.head.appendChild(newStyle);
+            headElementsRef.current.push(newStyle);
+            style.remove(); // Remove from the HTML to avoid duplication
+          }
+        });
+
+        // Save the processed HTML (without link/style tags that were moved to head)
+        setProcessedHtml(tempDiv.innerHTML);
+      }
+
+      // Process CSS to extract @import statements
+      if (form.customCss) {
+        // Regex to match @import statements
+        const importRegex = /@import\s+(?:url\()?['"]?([^'"\)]+)['"]?\)?[^;]*;/gi;
+        const imports: string[] = [];
+        let match;
+        
+        // Extract all @import URLs
+        while ((match = importRegex.exec(form.customCss)) !== null) {
+          imports.push(match[1]); // The URL is in capture group 1
         }
-      });
 
-      // Save the processed HTML (without link/style tags that were moved to head)
-      setProcessedHtml(tempDiv.innerHTML);
+        // Create <link> tags for each @import
+        imports.forEach(url => {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = url;
+          document.head.appendChild(link);
+          headElementsRef.current.push(link);
+        });
+
+        // Remove @import statements from CSS to avoid duplication
+        const cleanedCss = form.customCss.replace(importRegex, '').trim();
+        setProcessedCss(cleanedCss);
+      }
     }
 
     // Cleanup on unmount
@@ -111,7 +141,7 @@ export default function PublicFormPage() {
       headElementsRef.current.forEach(el => el.remove());
       headElementsRef.current = [];
     };
-  }, [form?.builderMode, form?.customHtml]);
+  }, [form?.builderMode, form?.customHtml, form?.customCss]);
 
   const submitMutation = useMutation({
     mutationFn: () => submitPublicForm(id!, { answers, email, urlParams }),
@@ -324,7 +354,7 @@ export default function PublicFormPage() {
         // Modo código: ancho completo, sin restricciones
         <div className="w-full h-full">
           <div dangerouslySetInnerHTML={{ __html: processedHtml || form.customHtml || '' }} />
-          <style>{form.customCss}</style>
+          <style>{processedCss || form.customCss}</style>
         </div>
       ) : (
         // Modo visual: layout con Card y máximo ancho
