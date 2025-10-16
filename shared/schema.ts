@@ -76,6 +76,7 @@ export const forms = pgTable("forms", {
   customHtml: text("custom_html"),
   customCss: text("custom_css"),
   customJs: text("custom_js"),
+  googleFontsUrls: text("google_fonts_urls").array(),
   submitButtonText: varchar("submit_button_text").notNull().default('Enviar respuesta'),
   submitButtonColor: varchar("submit_button_color").notNull().default('#f97316'),
   submitButtonBorderColor: varchar("submit_button_border_color").notNull().default('#ea580c'),
