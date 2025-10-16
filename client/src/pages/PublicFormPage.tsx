@@ -84,24 +84,30 @@ export default function PublicFormPage() {
 
       // Process HTML if exists
       if (form.customHtml) {
-        // Create a temporary div to parse the HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = form.customHtml;
+        // Unescape double-encoded quotes that may come from database
+        const cleanHtml = form.customHtml.replace(/""/g, '"');
+        console.log('📄 HTML (primeras líneas):', cleanHtml.substring(0, 500));
+        
+        // Use DOMParser to parse the full HTML document structure
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(cleanHtml, 'text/html');
 
-        // Extract all <link> tags (like Google Fonts)
-        const linkTags = tempDiv.querySelectorAll('link');
+        // Extract all <link> tags from the parsed document (including from <head>)
+        const linkTags = doc.querySelectorAll('link');
+        console.log('🔗 Links encontrados en HTML:', linkTags.length);
         linkTags.forEach(link => {
           const newLink = document.createElement('link');
           Array.from(link.attributes).forEach(attr => {
             newLink.setAttribute(attr.name, attr.value);
           });
+          console.log('✅ Link agregado al head:', newLink.href || newLink.getAttribute('href'));
           document.head.appendChild(newLink);
           headElementsRef.current.push(newLink);
           link.remove(); // Remove from the HTML to avoid duplication
         });
 
         // Extract <style> tags with @import
-        const styleTags = tempDiv.querySelectorAll('style');
+        const styleTags = doc.querySelectorAll('style');
         styleTags.forEach(style => {
           if (style.textContent?.includes('@import')) {
             const newStyle = document.createElement('style');
@@ -113,11 +119,13 @@ export default function PublicFormPage() {
         });
 
         // Remove all <script> tags from HTML to avoid duplicate execution
-        const scriptTags = tempDiv.querySelectorAll('script');
+        const scriptTags = doc.querySelectorAll('script');
         scriptTags.forEach(script => script.remove());
 
-        // Save the processed HTML (without link/style/script tags)
-        setProcessedHtml(tempDiv.innerHTML);
+        // Extract only the body content for rendering
+        // This avoids having duplicate <html>, <head>, <body> tags
+        const bodyContent = doc.body?.innerHTML || form.customHtml;
+        setProcessedHtml(bodyContent);
       }
 
       // Process CSS to extract @import statements
