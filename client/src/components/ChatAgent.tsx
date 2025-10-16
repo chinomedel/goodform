@@ -5,8 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Loader2, Sparkles } from "lucide-react";
+import { Send, Bot, User, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ChatMessage {
   id: string;
@@ -67,6 +78,26 @@ export function ChatAgent({ formId }: ChatAgentProps) {
     },
   });
 
+  const clearHistoryMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/forms/${formId}/chat/history`, {});
+    },
+    onSuccess: () => {
+      refetch();
+      toast({
+        title: "Historial borrado",
+        description: "El historial de chat ha sido eliminado exitosamente.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo borrar el historial",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSend = () => {
     if (!message.trim() || sendMessageMutation.isPending) return;
     
@@ -90,9 +121,46 @@ export function ChatAgent({ formId }: ChatAgentProps) {
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <CardTitle>Agente Analista</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <CardTitle>Agente Analista</CardTitle>
+          </div>
+          {history.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  data-testid="button-clear-history"
+                  disabled={clearHistoryMutation.isPending}
+                >
+                  {clearHistoryMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Borrar historial?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará toda la conversación con el agente. No se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel data-testid="button-cancel-clear">Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => clearHistoryMutation.mutate()}
+                    data-testid="button-confirm-clear"
+                  >
+                    Borrar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
         <CardDescription>
           Pregúntame sobre los datos o pídeme crear gráficos

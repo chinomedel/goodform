@@ -2477,7 +2477,7 @@ Responde en español de manera clara y concisa.`;
     }
   });
 
-  // Get chat history
+  // Get chat history for Analyst Agent
   app.get('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
     try {
       const { formId } = req.params;
@@ -2494,11 +2494,36 @@ Responde en español de manera clara y concisa.`;
         }
       }
 
-      const history = await storage.getChatHistory(formId);
+      const history = await storage.getChatHistory(formId, 'analyst');
       res.json(history);
     } catch (error) {
       console.error("Error fetching chat history:", error);
       res.status(500).json({ message: "Error al obtener historial" });
+    }
+  });
+
+  // Delete chat history for Analyst Agent
+  app.delete('/api/forms/:formId/chat/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const { formId } = req.params;
+      const form = await storage.getForm(formId);
+      
+      if (!form) {
+        return res.status(404).json({ message: "Formulario no encontrado" });
+      }
+
+      if (form.creatorId !== req.user.id) {
+        const permission = await storage.getUserFormPermission(formId, req.user.id);
+        if (!permission || permission.permission === 'viewer') {
+          return res.status(403).json({ message: "No tienes permisos para borrar el historial" });
+        }
+      }
+
+      await storage.deleteChatHistory(formId, 'analyst');
+      res.json({ message: "Historial borrado exitosamente" });
+    } catch (error) {
+      console.error("Error deleting chat history:", error);
+      res.status(500).json({ message: "Error al borrar historial" });
     }
   });
 
