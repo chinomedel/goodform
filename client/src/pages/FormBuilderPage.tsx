@@ -175,6 +175,7 @@ export default function FormBuilderPage() {
   const [customHtml, setCustomHtml] = useState("");
   const [customCss, setCustomCss] = useState("");
   const [customJs, setCustomJs] = useState("");
+  const [googleFontsUrls, setGoogleFontsUrls] = useState<string[]>([]);
   
   const [submitButtonText, setSubmitButtonText] = useState("Enviar respuesta");
   const [submitButtonColor, setSubmitButtonColor] = useState("#6366f1");
@@ -182,6 +183,7 @@ export default function FormBuilderPage() {
   
   const [urlParams, setUrlParams] = useState<string[]>([]);
   const [newUrlParam, setNewUrlParam] = useState("");
+  const [newGoogleFont, setNewGoogleFont] = useState("");
   const [publishStartDate, setPublishStartDate] = useState<string>("");
   const [publishEndDate, setPublishEndDate] = useState<string>("");
   const [iframeHeight, setIframeHeight] = useState<string>("600");
@@ -248,6 +250,7 @@ export default function FormBuilderPage() {
       setCustomHtml(formData.customHtml || "");
       setCustomCss(formData.customCss || "");
       setCustomJs(formData.customJs || "");
+      setGoogleFontsUrls(formData.googleFontsUrls || []);
       setSubmitButtonText(formData.submitButtonText || "Enviar respuesta");
       setSubmitButtonColor(formData.submitButtonColor || "#6366f1");
       setSubmitButtonBorderColor(formData.submitButtonBorderColor || "#4f46e5");
@@ -570,6 +573,7 @@ export default function FormBuilderPage() {
         customHtml: html || customHtml,
         customCss: css || customCss,
         customJs: js || customJs,
+        googleFontsUrls,
       }).catch((error) => {
         console.error('Error saving code:', error);
         toast({
@@ -633,6 +637,7 @@ export default function FormBuilderPage() {
         customHtml,
         customCss,
         customJs,
+        googleFontsUrls,
         publishStartDate: startDate,
         publishEndDate: endDate,
       });
@@ -1253,6 +1258,65 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                       </Dialog>
                     </div>
                   </div>
+
+                  {/* Google Fonts URLs Section */}
+                  <div className="mb-6 p-4 border rounded-lg bg-muted/30">
+                    <Label className="mb-3 block font-semibold">Google Fonts URLs</Label>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Agrega URLs de Google Fonts para usar fuentes personalizadas en tu formulario.
+                    </p>
+                    
+                    {/* Input to add new Google Font URL */}
+                    <div className="flex gap-2 mb-3">
+                      <Input
+                        value={newGoogleFont}
+                        onChange={(e) => setNewGoogleFont(e.target.value)}
+                        placeholder="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+                        className="flex-1"
+                        data-testid="input-google-font-url"
+                      />
+                      <Button
+                        onClick={() => {
+                          if (newGoogleFont.trim()) {
+                            setGoogleFontsUrls([...googleFontsUrls, newGoogleFont.trim()]);
+                            setNewGoogleFont("");
+                          }
+                        }}
+                        disabled={!newGoogleFont.trim()}
+                        data-testid="button-add-google-font"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Agregar
+                      </Button>
+                    </div>
+
+                    {/* List of Google Fonts URLs */}
+                    {googleFontsUrls.length > 0 && (
+                      <div className="space-y-2">
+                        {googleFontsUrls.map((url, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-2 p-2 bg-background rounded border"
+                          >
+                            <span className="flex-1 text-sm font-mono truncate" title={url}>
+                              {url}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setGoogleFontsUrls(googleFontsUrls.filter((_, i) => i !== index));
+                              }}
+                              data-testid={`button-remove-google-font-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="w-full">
                     <TabsTrigger value="html" className="flex-1" data-testid="tab-html">
