@@ -34,7 +34,7 @@ interface ChatAgentProps {
 export function ChatAgent({ formId }: ChatAgentProps) {
   const { toast } = useToast();
   const [message, setMessage] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: history = [], refetch } = useQuery<ChatMessage[]>({
@@ -112,10 +112,9 @@ export function ChatAgent({ formId }: ChatAgentProps) {
     }
   };
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [history, sendMessageMutation.isPending]);
 
   return (
@@ -167,7 +166,7 @@ export function ChatAgent({ formId }: ChatAgentProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 p-4 overflow-hidden">
-        <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
             {history.length === 0 && !sendMessageMutation.isPending && (
               <div className="text-center text-muted-foreground py-8">
@@ -232,6 +231,9 @@ export function ChatAgent({ formId }: ChatAgentProps) {
                 </div>
               </div>
             )}
+            
+            {/* Invisible element at the end for auto-scroll */}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
 
