@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encuesta Kastor</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+     <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="container-form">
+        <div class="encuesta-container">
+            
+            <div class="panel-izquierdo" id="panel-izquierdo"> 
+                <div class="contenedor-texto-panel-izquierdo">
+                    <h1 id="panel-izquierdo-h1">¿Cómo ha sido tu experiencia con Kastor últimamente?</h1>
+                    <h2 id="kastor-h2">Kastor</h2>
+                    <span id="check"><img src="http://upselling.kastor.cl/edificio_hbg/app/webroot/img/check-w.svg" alt=""></span>
+                    <p class="texto-informativo">Queremos seguir mejorando la plataforma y tus comentarios nos ayudan a priorizar las próximas mejoras.</p>
+                    <p class="texto-footer" id="texto-footer">Esta encuesta toma menos de 2 minutos.</p>
+                </div>
+                
+            </div>
+
+            <div class="panel-derecho">
+                <div class="step-indicator">
+                    <div class="step-circle active" id="indicator1">1</div>
+                    <div class="step-circle" id="indicator2">2</div>
+                    <div class="step-circle" id="indicator3">✓</div>
+                </div>
+
+                <div id="header-steps">
+                    <div class="logo">
+                        <img src="https://kastorsoftware.cl/wp-content/uploads/2024/11/logo-kastor.svg" alt="">
+                    </div>
+                    <div class="rayita-de-avance">
+                        <div class="rayita active-rayita" id="rayita1"></div>
+                        <div class="rayita" id="rayita2"></div>
+                        <div class="rayita" id="rayita3"></div>
+                    </div>
+                </div>
+            <form class="formulario-kastor" id="customForm">
+                
+                <!-- Paso 1 -->
+                <div class="step active" id="step1">
+                    <div class="question">
+                        <label>En una escala de 1 a 10, ¿qué tan probable es que recomiendes Kastor a otro administrador o comunidad?</label>
+                        <div class="rating-scale">
+                            <div class="slider-container">
+                                <input type="range" name="recomendacion" min="1" max="10" value="1" class="slider" id="npsRange" oninput="updateNPSValue()">
+                                <div class="slider-labels">
+                                    <span>1</span>
+                                    <span>2</span>
+                                    <span>3</span>
+                                    <span>4</span>
+                                    <span>5</span>
+                                    <span>6</span>
+                                    <span>7</span>
+                                    <span>8</span>
+                                    <span>9</span>
+                                    <span>10</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <label>En una escala de 1 a 5, ¿qué tan satisfecho estás con Kastor en general?</label>
+                        <div class="rating-scale" style="max-width: 500px; margin: 0 auto;">
+                            <div class="star-rating" style="max-width: 500px; margin: 0 auto; text-align: center;">
+                                <span class="star" data-value="1">&#9733;</span>
+                                <span class="star" data-value="2">&#9733;</span>
+                                <span class="star" data-value="3">&#9733;</span>
+                                <span class="star" data-value="4">&#9733;</span>
+                                <span class="star" data-value="5">&#9733;</span>
+                                <input type="hidden" name="satisfaction" id="satisfaction" value="">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="question">
+                        <label>¿Qué aspecto de Kastor te resulta más útil o valioso?</label>
+                        <input type="text" name="useful" class="text-input" id="useful" style="min-height: 60px;">
+                    </div>
+
+                    <button class="btn" type="button" onclick="nextStep(2)">Siguiente</button>
+                </div>
+
+                <!-- Paso 2 -->
+                <div class="step" id="step2">
+                    <div class="question">
+                        <label>Si pudieras mejorar un aspecto del software, ¿cuál sería?</label>
+                        <input type="text" name="improve" class="text-input" id="improve" oninput="updateCharCount('improve', 'count1')"></textarea>
+                    </div>
+
+                    <div class="question">
+                        <label>¿Hay algo más que quieras contarnos sobre tu experiencia?</label>
+                        <textarea class="text-input" name="additional" id="additional" maxlength="300" rows="5" oninput="updateCharCount('additional', 'count2')"></textarea>
+                        <div class="char-count"><span id="count2">0</span>/300 caracteres</div>
+                    </div>
+                    <!--Botón para probar paso 3-->
+                    <!--<button class="btn" onclick="submitSurvey()">Enviar comentarios</button>-->
+                    <!--Botón para enviar los datos-->
+                    <button class="btn" type="submit">Enviar comentarios</button>
+                </div>
+            </form>
+
+                <!-- Paso 3 - Gracias -->
+                <div class="step" id="step3">
+                    <div class="thank-you">
+                        <img src="https://upselling.kastor.cl/edificio_hbg/app/webroot/images/Rectangle.png" alt="Gracias" class="thank-you-image">
+                        <h2>¡Gracias por compartir tu opinio!</h2>
+                        <p>Seguiremos trabajando para mejorar tu experiencia</p>
+                        <button class="btn" onclick="window.location.href='https://kastorsoftware.cl'">Ir a Kastor</button>
+                    </div>
+                </div>
+
+                <div class="blue-circle"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
