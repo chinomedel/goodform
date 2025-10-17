@@ -77,7 +77,9 @@ export default function PublicFormPage() {
       form.googleFontsUrls.forEach((url: string) => {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = url;
+        // Decodificar entidades HTML (&amp; -> &)
+        const decodedUrl = url.replace(/&amp;/g, '&');
+        link.href = decodedUrl;
         document.head.appendChild(link);
         headElementsRef.current.push(link);
       });

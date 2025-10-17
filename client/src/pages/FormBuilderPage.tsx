@@ -1376,7 +1376,7 @@ document.getElementById('customForm')?.addEventListener('submit', async function
                             <head>
                               <meta charset="UTF-8">
                               <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                              ${googleFontsUrls.map(url => `<link rel="stylesheet" href="${url}">`).join('\n')}
+                              ${googleFontsUrls.map(url => `<link rel="stylesheet" href="${url.replace(/&amp;/g, '&')}">`).join('\n')}
                               <style>
                                 body { 
                                   margin: 0; 
