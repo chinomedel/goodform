@@ -40,7 +40,7 @@ export default function PublicFormPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [urlParams, setUrlParams] = useState<Record<string, string>>({});
-  const headElementsRef = useRef<HTMLElement[]>([]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { data: form, isLoading, error } = useQuery({
     queryKey: ['/api/public/forms', id],
@@ -66,31 +66,62 @@ export default function PublicFormPage() {
     }
   }, [form]);
 
-  // Load Google Fonts URLs directly into <head>
+  // Función para manejar envío desde iframe
   useEffect(() => {
-    // Clean up previous head elements
-    headElementsRef.current.forEach(el => el.remove());
-    headElementsRef.current = [];
+    const handleIframeSubmit = async (event: MessageEvent) => {
+      // Validar origen y source del mensaje
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) {
+        return;
+      }
 
-    // Load Google Fonts from the form's googleFontsUrls field
-    if (form?.googleFontsUrls && form.googleFontsUrls.length > 0) {
-      form.googleFontsUrls.forEach((url: string) => {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        // Decodificar entidades HTML (&amp; -> &)
-        const decodedUrl = url.replace(/&amp;/g, '&');
-        link.href = decodedUrl;
-        document.head.appendChild(link);
-        headElementsRef.current.push(link);
-      });
-    }
+      if (event.data.type === 'CUSTOM_FORM_SUBMIT') {
+        const requestId = event.data.requestId;
+        
+        try {
+          const result = await submitPublicForm(id!, { 
+            answers: event.data.data, 
+            email: event.data.data.email || '', 
+            urlParams 
+          });
+          
+          const responseData = result.ok ? await result.json() : null;
+          
+          // Enviar respuesta al iframe con data del backend
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'CUSTOM_FORM_SUBMIT_RESPONSE',
+            requestId,
+            success: result.ok,
+            data: responseData
+          }, '*');
 
-    // Cleanup on unmount
-    return () => {
-      headElementsRef.current.forEach(el => el.remove());
-      headElementsRef.current = [];
+          if (result.ok) {
+            setSubmitted(true);
+            toast({
+              title: "¡Formulario enviado!",
+              description: "Tu respuesta ha sido registrada correctamente.",
+            });
+          } else {
+            toast({
+              title: "Error",
+              description: "No se pudo enviar el formulario. Inténtalo de nuevo.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          // Enviar respuesta de error al iframe
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'CUSTOM_FORM_SUBMIT_RESPONSE',
+            requestId,
+            success: false,
+            data: null
+          }, '*');
+        }
+      }
     };
-  }, [form?.googleFontsUrls]);
+
+    window.addEventListener('message', handleIframeSubmit);
+    return () => window.removeEventListener('message', handleIframeSubmit);
+  }, [id, urlParams, toast]);
 
   const submitMutation = useMutation({
     mutationFn: () => submitPublicForm(id!, { answers, email, urlParams }),
@@ -300,11 +331,74 @@ export default function PublicFormPage() {
   return (
     <div className="min-h-screen bg-background">
       {form.builderMode === 'code' ? (
-        // Modo código: ancho completo, sin restricciones
-        <div className="w-full h-full">
-          <div dangerouslySetInnerHTML={{ __html: form.customHtml || '' }} />
-          <style>{form.customCss}</style>
-        </div>
+        // Modo código: usar iframe para HTML completo con Google Fonts
+        <iframe
+          ref={iframeRef}
+          srcDoc={`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                ${(form.googleFontsUrls || []).map((url: string) => `<link rel="stylesheet" href="${url.replace(/&amp;/g, '&')}">`).join('\n')}
+                <style>
+                  body { 
+                    margin: 0; 
+                    padding: 0; 
+                  }
+                  ${form.customCss || ''}
+                </style>
+              </head>
+              <body>
+                ${form.customHtml || ''}
+                <script>
+                  // Mapa de promesas pendientes
+                  const pendingRequests = new Map();
+                  let requestCounter = 0;
+                  
+                  // Escuchar respuestas del parent
+                  window.addEventListener('message', (event) => {
+                    if (event.data.type === 'CUSTOM_FORM_SUBMIT_RESPONSE') {
+                      const { requestId, success, data } = event.data;
+                      const resolve = pendingRequests.get(requestId);
+                      if (resolve) {
+                        pendingRequests.delete(requestId);
+                        resolve({ success, data });
+                      }
+                    }
+                  });
+                  
+                  // Función global para enviar el formulario
+                  async function submitCustomForm(data) {
+                    return new Promise((resolve) => {
+                      const requestId = ++requestCounter;
+                      pendingRequests.set(requestId, resolve);
+                      
+                      window.parent.postMessage({ 
+                        type: 'CUSTOM_FORM_SUBMIT', 
+                        requestId,
+                        data 
+                      }, '*');
+                      
+                      // Timeout de seguridad
+                      setTimeout(() => {
+                        if (pendingRequests.has(requestId)) {
+                          pendingRequests.delete(requestId);
+                          resolve({ success: false, error: 'Timeout' });
+                        }
+                      }, 30000);
+                    });
+                  }
+                  
+                  ${form.customJs || ''}
+                </script>
+              </body>
+            </html>
+          `}
+          className="w-full h-screen border-0"
+          title="Custom Form"
+          sandbox="allow-scripts"
+        />
       ) : (
         // Modo visual: layout con Card y máximo ancho
         <div className="py-12">
